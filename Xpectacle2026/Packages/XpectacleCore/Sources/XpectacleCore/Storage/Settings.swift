@@ -54,7 +54,9 @@ public actor SettingsStore {
     public func update(_ mutate: (inout Settings) -> Void) throws {
         var s = current
         mutate(&s)
-        let data = try JSONEncoder.pretty.encode(s)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = try encoder.encode(s)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try data.write(to: url, options: .atomic)
         current = s
@@ -64,12 +66,4 @@ public actor SettingsStore {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return appSupport.appendingPathComponent("Xpectacle/settings.json")
     }
-}
-
-extension JSONEncoder {
-    static let pretty: JSONEncoder = {
-        let e = JSONEncoder()
-        e.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return e
-    }()
 }
