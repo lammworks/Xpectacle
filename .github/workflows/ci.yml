@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  core-tests:
+    name: Swift package tests (macOS 14)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Test XpectacleCore
+        working-directory: Xpectacle2026/Packages/XpectacleCore
+        run: swift test --parallel
+
+  build-app:
+    name: Build app (placeholder)
+    runs-on: macos-14
+    needs: core-tests
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "App target Xcode project to be generated; placeholder build step."

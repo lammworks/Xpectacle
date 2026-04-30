@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key><string>Xpectacle</string>
+    <key>CFBundleDisplayName</key><string>Xpectacle</string>
+    <key>CFBundleIdentifier</key><string>com.xpectacle.Xpectacle</string>
+    <key>CFBundleVersion</key><string>2.0.0</string>
+    <key>CFBundleShortVersionString</key><string>2.0.0</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>LSMinimumSystemVersion</key><string>14.0</string>
+    <key>LSUIElement</key><true/>
+    <key>NSHumanReadableCopyright</key><string>MIT-licensed. Successor to Spectacle by Eric Czarny.</string>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>Xpectacle uses the Accessibility API to read and set window frames, which is required for every window action and snap zone.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Xpectacle does not use Apple Events; this entry exists only to satisfy strict TCC defaults.</string>
+    <key>SUFeedURL</key>
+    <string>https://lammworks.github.io/xpectacle/appcast.xml</string>
+    <key>SUEnableAutomaticChecks</key><true/>
+</dict>
+</plist>
