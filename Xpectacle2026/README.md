@@ -4,7 +4,16 @@ A Swift 6 / SwiftUI rewrite of the legacy [Spectacle](https://github.com/eczarny
 
 ## Status
 
-Source-complete scaffold. The Xcode project file (`.xcodeproj`) needs to be generated locally with Xcode 16+ from the `App/` source group and the `Packages/XpectacleCore` Swift package. CI exercises the package with `swift test`.
+Source-complete. The `.xcodeproj` is generated from `project.yml` via [XcodeGen](https://github.com/yonaskolb/XcodeGen) so it isn't checked in.
+
+```bash
+brew install xcodegen
+cd Xpectacle2026
+xcodegen
+open Xpectacle.xcodeproj
+```
+
+Then in Xcode: select the `Xpectacle` scheme, Run. First launch will prompt for Accessibility access; grant it and the hotkeys, snap zones, layouts, and App Intents are all live. CI exercises the core package with `swift test` on `macos-14`.
 
 ## Why a rewrite
 

@@ -35,6 +35,8 @@ struct MenuBarContent: View {
         }
         Divider()
         SettingsLink { Text("Settings…") }
+        Button("Check for Updates…") { model.updater.checkForUpdates() }
+            .disabled(!model.updater.canCheckForUpdates)
         Button("Quit Xpectacle") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }

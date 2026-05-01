@@ -1,0 +1,80 @@
+name: Xpectacle
+options:
+  bundleIdPrefix: com.xpectacle
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ENABLE_HARDENED_RUNTIME: YES
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_STRICT_CONCURRENCY: minimal
+    DEAD_CODE_STRIPPING: YES
+    GENERATE_INFOPLIST_FILE: NO
+    ALWAYS_SEARCH_USER_PATHS: NO
+    CLANG_ENABLE_MODULES: YES
+    ARCHS: "$(ARCHS_STANDARD)"
+    ONLY_ACTIVE_ARCH: NO
+
+packages:
+  XpectacleCore:
+    path: Packages/XpectacleCore
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 2.2.0
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.6.0
+
+targets:
+  Xpectacle:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: App
+    resources:
+      - path: App/Resources/Assets.xcassets
+    info:
+      path: App/Resources/Info.plist
+      properties:
+        CFBundleName: Xpectacle
+        CFBundleDisplayName: Xpectacle
+        CFBundleIdentifier: com.xpectacle.Xpectacle
+        CFBundleVersion: "2.0.0"
+        CFBundleShortVersionString: "2.0.0"
+        CFBundlePackageType: APPL
+        LSMinimumSystemVersion: "14.0"
+        LSUIElement: true
+        NSHumanReadableCopyright: "MIT-licensed. Successor to Spectacle by Eric Czarny."
+        NSAccessibilityUsageDescription: "Xpectacle uses the Accessibility API to read and set window frames, which is required for every window action and snap zone."
+        SUFeedURL: "https://lammworks.github.io/xpectacle/appcast.xml"
+        SUEnableAutomaticChecks: true
+        SUPublicEDKey: "REPLACE_WITH_GENERATED_EDDSA_PUBLIC_KEY"
+    entitlements:
+      path: App/Resources/Xpectacle.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.automation.apple-events: false
+    dependencies:
+      - package: XpectacleCore
+      - package: KeyboardShortcuts
+      - package: Sparkle
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xpectacle.Xpectacle
+        PRODUCT_NAME: Xpectacle
+        MARKETING_VERSION: "2.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        SWIFT_EMIT_LOC_STRINGS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    scheme:
+      testTargets: []
+      gatherCoverageData: false

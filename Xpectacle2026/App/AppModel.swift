@@ -9,8 +9,11 @@ import XpectacleCore
 final class AppModel {
     var settings: Settings = .default
     var accessibilityTrusted: Bool = Permissions.isAccessibilityTrusted
+    var launchAtLoginEnabled: Bool = LaunchAtLogin.isEnabled
+    let updater = UpdaterController()
 
     private let dragMonitor = DragMonitor()
+    private let preview = PreviewOverlay()
     private var permissionsTimer: Timer?
 
     init() {
@@ -22,21 +25,28 @@ final class AppModel {
     }
 
     private func load() async {
-        let store = SettingsStore.shared
-        settings = await store.current
+        settings = await SettingsStore.shared.current
+        await applySettings()
     }
 
     func update(_ mutate: @escaping (inout Settings) -> Void) {
         Task {
             try? await SettingsStore.shared.update(mutate)
             settings = await SettingsStore.shared.current
-            applySettings()
+            await applySettings()
         }
     }
 
-    private func applySettings() {
+    private func applySettings() async {
         if settings.dragSnapEnabled { dragMonitor.start() } else { dragMonitor.stop() }
         dragMonitor.activationDelay = settings.snapZoneActivationDelay
+        await WindowController.shared.setDisabledBundleIDs(settings.disabledBundleIDs)
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        LaunchAtLogin.setEnabled(enabled)
+        launchAtLoginEnabled = LaunchAtLogin.isEnabled
+        update { $0.launchAtLogin = enabled }
     }
 
     private func setupHotkeys() {
@@ -46,11 +56,14 @@ final class AppModel {
     }
 
     private func setupDragMonitor() {
+        dragMonitor.onZoneEnter = { [weak self] zone, screen in
+            self?.preview.show(action: zone.action, on: screen)
+        }
+        dragMonitor.onZoneExit = { [weak self] in self?.preview.hide() }
         dragMonitor.onCommit = { [weak self] zone, _ in
-            guard let self else { return }
-            if self.settings.dragSnapEnabled {
-                Task { try? await WindowController.shared.perform(zone.action) }
-            }
+            self?.preview.hide()
+            guard let self, self.settings.dragSnapEnabled else { return }
+            Task { try? await WindowController.shared.perform(zone.action) }
         }
         if settings.dragSnapEnabled { dragMonitor.start() }
     }
@@ -59,23 +72,20 @@ final class AppModel {
         permissionsTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.accessibilityTrusted = Permissions.isAccessibilityTrusted
+                self?.launchAtLoginEnabled = LaunchAtLogin.isEnabled
             }
         }
     }
 
     /// Run the legacy importer once, the very first time the app launches
-    /// without a settings file already on disk. Any matched shortcuts are
-    /// pushed into KeyboardShortcuts' storage.
+    /// without a settings file already on disk.
     private func setupLegacyImport() {
         let url = SettingsStore.defaultURL
         guard !FileManager.default.fileExists(atPath: url.path) else { return }
         let imported = LegacyImporter.importIfPresent()
         for (action, shortcut) in imported {
-            // Mapping legacy carbon modifier flags → Cocoa is straightforward
-            // (Carbon shifts are documented constants); KeyboardShortcuts
-            // accepts NSEvent.ModifierFlags directly.
             let mods = NSEvent.ModifierFlags(rawValue: shortcut.modifierFlags)
-            let key = KeyboardShortcuts.Key(rawValue: shortcut.keyCode) ?? .return
+            guard let key = KeyboardShortcuts.Key(rawValue: shortcut.keyCode) else { continue }
             KeyboardShortcuts.setShortcut(.init(key, modifiers: mods),
                                           for: .forAction(action))
         }

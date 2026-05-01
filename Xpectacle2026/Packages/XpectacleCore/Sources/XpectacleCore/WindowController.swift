@@ -13,15 +13,26 @@ public actor WindowController {
 
     private let mover: any WindowMover
     private let detector: ScreenDetector
+    private let stageManager: StageManagerProbe
     private var thirds = ThirdsCycler.State()
     private var history = UndoStack()
+    /// Bundle IDs that should bypass all window actions. Mirrors
+    /// `Settings.disabledBundleIDs`; the App tier pushes updates via
+    /// `setDisabledBundleIDs(_:)` so the actor doesn't read settings on the hot path.
+    private var disabledBundleIDs: Set<String> = []
 
     public init(
         mover: any WindowMover = MoverChain.standard(),
-        detector: ScreenDetector = ScreenDetector()
+        detector: ScreenDetector = ScreenDetector(),
+        stageManager: StageManagerProbe = StageManagerProbe()
     ) {
         self.mover = mover
         self.detector = detector
+        self.stageManager = stageManager
+    }
+
+    public func setDisabledBundleIDs(_ ids: [String]) {
+        disabledBundleIDs = Set(ids.map { $0.lowercased() })
     }
 
     /// Run an action against the frontmost window.
@@ -29,6 +40,8 @@ public actor WindowController {
         try ensureAccessibilityTrusted()
 
         let (window, screens, primaryHeight, currentFrame) = try await readContext()
+        if let bid = window.owner.bundleIdentifier?.lowercased(),
+           disabledBundleIDs.contains(bid) { return }
 
         // Undo / redo short-circuit before any geometry math.
         switch action {
@@ -49,7 +62,9 @@ public actor WindowController {
         guard let target = detector.targetScreen(for: action, windowFrame: currentFrame, screens: screens)
         else { return }
 
-        let visible = target.visibleFrame
+        // Stage Manager: when the shelf is auto-hidden, NSScreen.visibleFrame
+        // doesn't account for it, so we conservatively shrink the usable rect.
+        let visible = stageManager.adjustedVisibleFrame(target.visibleFrame)
         let newFrame: CGRect
         if action.changesDisplay {
             newFrame = scaled(currentFrame, fromVisible: detector.screen(containing: currentFrame, in: screens)?.visibleFrame ?? visible, toVisible: visible)
