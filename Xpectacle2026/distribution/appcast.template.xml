@@ -1,0 +1,31 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Xpectacle Updates</title>
+        <link>https://lammworks.github.io/xpectacle/appcast.xml</link>
+        <description>Most recent Xpectacle releases.</description>
+        <language>en</language>
+        <item>
+            <title>Version 2.0.0</title>
+            <pubDate>Sun, 01 Jun 2026 12:00:00 +0000</pubDate>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+                <h2>Xpectacle 2.0.0</h2>
+                <p>Apple Silicon native rewrite of the original Spectacle.</p>
+                <ul>
+                    <li>Drag-to-edge snap zones with hover preview</li>
+                    <li>Named layouts</li>
+                    <li>Stage Manager awareness</li>
+                    <li>App Intents (Shortcuts.app + Siri)</li>
+                </ul>
+            ]]></description>
+            <enclosure
+                url="https://lammworks.github.io/xpectacle/Xpectacle-2.0.0.dmg"
+                sparkle:edSignature="REPLACE_WITH_OUTPUT_OF_sign_update"
+                length="0"
+                type="application/octet-stream" />
+        </item>
+    </channel>
+</rss>

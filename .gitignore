@@ -19,3 +19,12 @@ DerivedData
 
 Carthage/Build
 Carthage/Checkouts
+
+# Xpectacle 2026
+Xpectacle2026/.deriveddata/
+Xpectacle2026/Xpectacle.xcodeproj/
+Xpectacle2026/.swiftpm/
+Xpectacle2026/Packages/XpectacleCore/.build/
+Xpectacle2026/Packages/XpectacleCore/.swiftpm/
+.DS_Store
+
