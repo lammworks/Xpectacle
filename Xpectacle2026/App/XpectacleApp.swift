@@ -5,6 +5,7 @@ import XpectacleCore
 @main
 struct XpectacleApp: App {
     @State private var appModel = AppModel()
+    @Environment(\.openSettings) private var openSettings
 
     var body: some Scene {
         MenuBarExtra("Xpectacle", systemImage: "rectangle.split.2x2") {
@@ -37,7 +38,14 @@ struct XpectacleApp: App {
             }
 
             Divider()
-            SettingsLink { Text("Settings…") }
+            Button("Settings…") {
+                // SettingsLink doesn't activate LSUIElement apps, so the
+                // window opens behind everything else. Activate first, then
+                // ask the Scene to open the Settings window.
+                NSApp.activate(ignoringOtherApps: true)
+                openSettings()
+            }
+            .keyboardShortcut(",")
             Button("Check for Updates…") { appModel.updater.checkForUpdates() }
                 .disabled(!appModel.updater.canCheckForUpdates)
             Button("Quit Xpectacle") { NSApplication.shared.terminate(nil) }
