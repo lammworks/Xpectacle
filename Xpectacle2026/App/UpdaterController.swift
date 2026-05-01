@@ -5,9 +5,11 @@ import UserNotifications
 /// Wraps Sparkle's `SPUStandardUpdaterController` and implements the
 /// "gentle reminders" pattern Sparkle requires for background/menu-bar
 /// apps: when an update is found in the background, we suppress Sparkle's
-/// modal and post a User Notification instead. Tapping the notification
-/// surfaces the regular update flow.
-@MainActor
+/// modal and post a User Notification instead.
+///
+/// Sparkle's delegate protocols aren't `@MainActor`-annotated, so this
+/// type stays at module isolation and hops to main only when touching
+/// AppKit/SwiftUI state.
 final class UpdaterController: NSObject, ObservableObject {
     private(set) var controller: SPUStandardUpdaterController!
 
@@ -27,16 +29,12 @@ final class UpdaterController: NSObject, ObservableObject {
 }
 
 extension UpdaterController: SPUStandardUserDriverDelegate {
-    /// Tells Sparkle we'll handle the UI ourselves for scheduled (background)
-    /// update checks — so the user gets a notification, not a hidden modal.
     var supportsGentleScheduledUpdateReminders: Bool { true }
 
     func standardUserDriverShouldHandleShowingScheduledUpdate(
         _ update: SUAppcastItem,
         andInImmediateFocus immediateFocus: Bool
     ) -> Bool {
-        // If the app is frontmost we let Sparkle show its normal alert;
-        // otherwise we'll post a gentle notification below.
         immediateFocus
     }
 
@@ -65,24 +63,19 @@ extension UpdaterController: SPUStandardUserDriverDelegate {
     }
 
     func standardUserDriverWillFinishUpdateSession() {
-        // Clear any leftover update notifications when Sparkle's flow ends.
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
     }
 }
 
 extension UpdaterController: UNUserNotificationCenterDelegate {
-    /// When the user taps the notification, ask Sparkle to surface the
-    /// regular update prompt.
-    nonisolated func userNotificationCenter(
+    func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
         await MainActor.run { self.controller.checkForUpdates(nil) }
     }
 
-    /// Show notifications even while the app is technically active — for a
-    /// menu-bar app "active" means the menu was open.
-    nonisolated func userNotificationCenter(
+    func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
