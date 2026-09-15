@@ -3,8 +3,7 @@ import SwiftUI
 import XpectacleCore
 
 /// A borderless, click-through window that shows the rectangle a snap zone
-/// will produce, while the user is still dragging. Fades in on hover, fades
-/// out on exit or on commit.
+/// will produce while the user is still dragging.
 @MainActor
 final class PreviewOverlay {
     private var window: NSWindow?
@@ -17,22 +16,13 @@ final class PreviewOverlay {
             visibleFrame: visible
         ) else { return }
         ensureWindow(on: screen).setFrame(frame, display: true)
-        window?.alphaValue = 0
+        window?.alphaValue = 0.45
         window?.orderFrontRegardless()
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.12
-            window?.animator().alphaValue = 0.45
-        }
     }
 
     func hide() {
-        guard let w = window else { return }
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.12
-            w.animator().alphaValue = 0
-        }, completionHandler: { [weak self] in
-            self?.window?.orderOut(nil)
-        })
+        // An old fade completion could otherwise hide a newly shown zone.
+        window?.orderOut(nil)
     }
 
     private func ensureWindow(on screen: ScreenInfo) -> NSWindow {

@@ -1,18 +1,18 @@
 import AppKit
+import AppIntents
 import SwiftUI
 import XpectacleCore
 
 @main
 struct XpectacleApp: App {
     @State private var appModel = AppModel()
-    @Environment(\.openSettings) private var openSettings
 
     var body: some Scene {
         MenuBarExtra("Xpectacle", systemImage: "rectangle.split.2x2") {
             // SwiftUI's MenuBarExtra(.menu) builder is finicky about custom
             // subviews — inline every item here so the menu always renders.
             if !appModel.accessibilityTrusted {
-                Button("Grant Accessibility Access…") { Permissions.promptForAccessibility() }
+                Button("Grant Accessibility Access…") { Permissions.openAccessibilitySettings() }
                 Divider()
             }
 
@@ -20,8 +20,9 @@ struct XpectacleApp: App {
                 Section(group.title) {
                     ForEach(group.actions, id: \.identifier) { action in
                         Button(action.localizedTitle) {
-                            Task { try? await WindowController.shared.perform(action) }
+                            appModel.perform(action)
                         }
+                        .disabled(!appModel.accessibilityTrusted || !appModel.settingsLoaded)
                     }
                 }
             }
@@ -31,20 +32,20 @@ struct XpectacleApp: App {
                 Section("Layouts") {
                     ForEach(appModel.settings.layouts) { layout in
                         Button(layout.name) {
-                            Task { try? await LayoutEngine.shared.apply(layout) }
+                            appModel.apply(layout)
                         }
+                        .disabled(!appModel.accessibilityTrusted || !appModel.settingsLoaded)
                     }
                 }
             }
 
             Divider()
-            Button("Settings…") {
-                // SettingsLink doesn't activate LSUIElement apps, so the
-                // window opens behind everything else. Activate first, then
-                // ask the Scene to open the Settings window.
-                NSApp.activate(ignoringOtherApps: true)
-                openSettings()
+            if let errorMessage = appModel.errorMessage {
+                Text(errorMessage)
+                Button("Dismiss Error") { appModel.errorMessage = nil }
+                Divider()
             }
+            SettingsLink { Text("Settings…") }
             .keyboardShortcut(",")
             Button("Check for Updates…") { appModel.updater.checkForUpdates() }
                 .disabled(!appModel.updater.canCheckForUpdates)
@@ -58,6 +59,10 @@ struct XpectacleApp: App {
                 .frame(minWidth: 720, minHeight: 480)
         }
     }
+}
+
+struct XpectacleAppIntentsPackage: AppIntentsPackage {
+    static var includedPackages: [any AppIntentsPackage.Type] { [XpectacleCoreAppIntentsPackage.self] }
 }
 
 private struct MenuActionGroup {

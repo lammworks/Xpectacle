@@ -1,57 +1,121 @@
 import AppKit
-import KeyboardShortcuts
 import Observation
-import SwiftUI
 import XpectacleCore
 
 @MainActor
 @Observable
 final class AppModel {
     var settings: Settings = .default
-    var accessibilityTrusted: Bool = Permissions.isAccessibilityTrusted
-    var launchAtLoginEnabled: Bool = LaunchAtLogin.isEnabled
+    var settingsLoaded = false
+    var accessibilityTrusted = Permissions.isAccessibilityTrusted
+    var launchAtLoginEnabled = LaunchAtLogin.isEnabled
+    var launchAtLoginNeedsApproval = LaunchAtLogin.requiresApproval
+    var errorMessage: String?
     let updater = UpdaterController()
 
     private let dragMonitor = DragMonitor()
     private let preview = PreviewOverlay()
     private var permissionsTimer: Timer?
+    private var settingsTask: Task<Void, Never>?
 
     init() {
-        Task { await load() }
-        setupHotkeys()
+        HotkeyService.shared.importLegacyShortcutsIfNeeded()
         setupDragMonitor()
         setupPermissionsPolling()
-        setupLegacyImport()
-    }
-
-    private func load() async {
-        settings = await SettingsStore.shared.current
-        await applySettings()
-    }
-
-    func update(_ mutate: @escaping (inout Settings) -> Void) {
-        Task {
-            try? await SettingsStore.shared.update(mutate)
-            settings = await SettingsStore.shared.current
-            await applySettings()
+        settingsTask = Task { [weak self] in
+            guard let self else { return }
+            self.settings = await SettingsStore.shared.current
+            self.settings.launchAtLogin = LaunchAtLogin.isEnabled
+            self.errorMessage = await SettingsStore.shared.loadError
+            self.settingsLoaded = true
+            await self.applySettings()
         }
     }
 
+    func update(_ mutate: (inout Settings) -> Void) {
+        guard settingsLoaded else { return }
+        // Update bindings immediately; serialize persistence so rapid slider or
+        // toggle changes cannot overwrite a later edit with an older snapshot.
+        mutate(&settings)
+        settings.normalize()
+        let snapshot = settings
+        let previous = settingsTask
+        settingsTask = Task { [weak self] in
+            await previous?.value
+            guard let self else { return }
+            do {
+                try await SettingsStore.shared.update { $0 = snapshot }
+            } catch {
+                self.errorMessage = "Couldn’t save settings: \(error.localizedDescription)"
+            }
+            await self.applySettings()
+        }
+        applyAppearance()
+        synchronizePermissions()
+    }
+
     private func applySettings() async {
-        if settings.dragSnapEnabled { dragMonitor.start() } else { dragMonitor.stop() }
-        dragMonitor.activationDelay = settings.snapZoneActivationDelay
+        applyAppearance()
+        synchronizePermissions()
         await WindowController.shared.setDisabledBundleIDs(settings.disabledBundleIDs)
     }
 
-    func setLaunchAtLogin(_ enabled: Bool) {
-        LaunchAtLogin.setEnabled(enabled)
-        launchAtLoginEnabled = LaunchAtLogin.isEnabled
-        update { $0.launchAtLogin = enabled }
+    private func applyAppearance() {
+        NSApp.setActivationPolicy(settings.showInDock ? .regular : .accessory)
     }
 
-    private func setupHotkeys() {
-        HotkeyService.shared.registerAll { action in
-            Task { try? await WindowController.shared.perform(action) }
+    func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            try LaunchAtLogin.setEnabled(enabled)
+            refreshSystemState()
+            let actualState = launchAtLoginEnabled
+            update { $0.launchAtLogin = actualState }
+        } catch {
+            refreshSystemState()
+            errorMessage = "Couldn’t update launch at login: \(error.localizedDescription)"
+        }
+    }
+
+    func perform(_ action: WindowAction) {
+        guard settingsLoaded else { return }
+        refreshSystemState()
+        guard accessibilityTrusted else {
+            Permissions.openAccessibilitySettings()
+            return
+        }
+        Task {
+            do { try await WindowController.shared.perform(action) }
+            catch { errorMessage = "Couldn’t move this window: \(error.localizedDescription)" }
+        }
+    }
+
+    func apply(_ layout: Layout) {
+        Task {
+            do { try await LayoutEngine.shared.apply(layout) }
+            catch { errorMessage = "Couldn’t apply layout: \(error.localizedDescription)" }
+        }
+    }
+
+    func refreshSystemState() {
+        accessibilityTrusted = Permissions.isAccessibilityTrusted
+        launchAtLoginEnabled = LaunchAtLogin.isEnabled
+        launchAtLoginNeedsApproval = LaunchAtLogin.requiresApproval
+        synchronizePermissions()
+    }
+
+    private func synchronizePermissions() {
+        if accessibilityTrusted && settingsLoaded {
+            HotkeyService.shared.registerAll { [weak self] action in self?.perform(action) }
+        } else {
+            HotkeyService.shared.unregisterAll()
+        }
+        dragMonitor.activationDelay = settings.snapZoneActivationDelay
+        dragMonitor.disabledBundleIDs = Set(settings.disabledBundleIDs.map { $0.lowercased() })
+        if accessibilityTrusted && settingsLoaded && settings.dragSnapEnabled {
+            dragMonitor.start()
+        } else {
+            dragMonitor.stop()
+            preview.hide()
         }
     }
 
@@ -60,34 +124,24 @@ final class AppModel {
             self?.preview.show(action: zone.action, on: screen)
         }
         dragMonitor.onZoneExit = { [weak self] in self?.preview.hide() }
-        dragMonitor.onCommit = { [weak self] zone, _ in
-            self?.preview.hide()
-            guard let self, self.settings.dragSnapEnabled else { return }
-            Task { try? await WindowController.shared.perform(zone.action) }
-        }
-        if settings.dragSnapEnabled { dragMonitor.start() }
-    }
-
-    private func setupPermissionsPolling() {
-        permissionsTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.accessibilityTrusted = Permissions.isAccessibilityTrusted
-                self?.launchAtLoginEnabled = LaunchAtLogin.isEnabled
+        dragMonitor.onCommit = { [weak self] zone, screen, window in
+            guard let self else { return }
+            self.preview.hide()
+            guard self.settings.dragSnapEnabled, Permissions.isAccessibilityTrusted else { return }
+            Task {
+                do {
+                    try await WindowController.shared.perform(zone.action, on: window, targetScreenID: screen.id)
+                } catch {
+                    self.errorMessage = "Couldn’t snap this window: \(error.localizedDescription)"
+                }
             }
         }
     }
 
-    /// Run the legacy importer once, the very first time the app launches
-    /// without a settings file already on disk.
-    private func setupLegacyImport() {
-        let url = SettingsStore.defaultURL
-        guard !FileManager.default.fileExists(atPath: url.path) else { return }
-        let imported = LegacyImporter.importIfPresent()
-        for (action, shortcut) in imported {
-            let mods = NSEvent.ModifierFlags(rawValue: shortcut.modifierFlags)
-            guard let key = KeyboardShortcuts.Key(rawValue: shortcut.keyCode) else { continue }
-            KeyboardShortcuts.setShortcut(.init(key, modifiers: mods),
-                                          for: .forAction(action))
+    private func setupPermissionsPolling() {
+        permissionsTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refreshSystemState() }
         }
+        permissionsTimer?.tolerance = 1
     }
 }

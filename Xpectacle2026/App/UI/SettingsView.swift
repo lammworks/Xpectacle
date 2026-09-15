@@ -15,6 +15,19 @@ struct SettingsView: View {
             PermissionsTab(model: model).tabItem { Label("Permissions", systemImage: "lock.shield") }
         }
         .padding()
+        .disabled(!model.settingsLoaded)
+        .onAppear {
+            NSApp.activate(ignoringOtherApps: true)
+            model.refreshSystemState()
+        }
+        .alert("Xpectacle", isPresented: Binding(
+            get: { model.errorMessage != nil },
+            set: { if !$0 { model.errorMessage = nil } }
+        )) {
+            Button("OK") { model.errorMessage = nil }
+        } message: {
+            Text(model.errorMessage ?? "")
+        }
     }
 }
 
@@ -47,10 +60,9 @@ struct SnapZonesTab: View {
                     .monospacedDigit()
                     .frame(width: 60, alignment: .trailing)
             }
-            Toggle("Stage Manager aware", isOn: Binding(
-                get: { model.settings.stageManagerAware },
-                set: { v in model.update { $0.stageManagerAware = v } }
-            ))
+            Text("Snapping uses the usable area reported by macOS for each display.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
         .formStyle(.grouped)
     }
@@ -67,9 +79,12 @@ struct LayoutsTab: View {
                 Button("Capture Current Windows") {
                     let name = newLayoutName.isEmpty ? "Untitled" : newLayoutName
                     Task {
-                        if let layout = try? await LayoutEngine.shared.capture(named: name) {
+                        do {
+                            let layout = try await LayoutEngine.shared.capture(named: name)
                             model.update { $0.layouts.append(layout) }
                             newLayoutName = ""
+                        } catch {
+                            model.errorMessage = "Couldn’t capture layout: \(error.localizedDescription)"
                         }
                     }
                 }
@@ -83,7 +98,7 @@ struct LayoutsTab: View {
                         Text("\(layout.slots.count) windows")
                             .foregroundStyle(.secondary)
                             .font(.callout)
-                        Button("Apply") { Task { try? await LayoutEngine.shared.apply(layout) } }
+                        Button("Apply") { model.apply(layout) }
                         Button(role: .destructive) {
                             model.update { $0.layouts.removeAll { $0.id == layout.id } }
                         } label: { Image(systemName: "trash") }
@@ -103,14 +118,19 @@ struct GeneralTab: View {
                 get: { model.launchAtLoginEnabled },
                 set: { v in model.setLaunchAtLogin(v) }
             ))
-            Toggle("Show in menu bar", isOn: Binding(
-                get: { model.settings.showInMenuBar },
-                set: { v in model.update { $0.showInMenuBar = v } }
-            ))
+            if model.launchAtLoginNeedsApproval {
+                LabeledContent("Launch at login needs approval") {
+                    Button("Open Login Items") { LaunchAtLogin.openSettings() }
+                    Button("Cancel") { model.setLaunchAtLogin(false) }
+                }
+            }
             Toggle("Show in Dock", isOn: Binding(
                 get: { model.settings.showInDock },
                 set: { v in model.update { $0.showInDock = v } }
             ))
+            Text("Xpectacle remains available in the menu bar.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
             Section("Disabled Apps") {
                 Text("Window actions are ignored for these bundle identifiers.")
                     .foregroundStyle(.secondary)
@@ -142,7 +162,11 @@ private struct AddBundleIDField: View {
             Button("Add") {
                 let trimmed = input.trimmingCharacters(in: .whitespaces)
                 guard !trimmed.isEmpty else { return }
-                model.update { $0.disabledBundleIDs.append(trimmed) }
+                model.update {
+                    if !$0.disabledBundleIDs.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) {
+                        $0.disabledBundleIDs.append(trimmed)
+                    }
+                }
                 input = ""
             }
             .disabled(input.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -155,12 +179,12 @@ struct UpdatesTab: View {
     var body: some View {
         Form {
             HStack {
-                Text("Xpectacle 2.0.0")
+                Text("Xpectacle \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")")
                 Spacer()
                 Button("Check for Updates…") { model.updater.checkForUpdates() }
                     .disabled(!model.updater.canCheckForUpdates)
             }
-            Text("Updates are delivered via Sparkle 2 with EdDSA-signed appcasts. The feed URL is set in Info.plist (SUFeedURL).")
+            Text("Check GitHub for the latest release and installation instructions.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }

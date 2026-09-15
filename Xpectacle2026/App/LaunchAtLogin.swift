@@ -1,25 +1,29 @@
 import ServiceManagement
 
-/// Wrapper around `SMAppService.mainApp` for launch-at-login. macOS 13+
-/// removed the old loginitems API; this is the modern replacement.
+/// Uses the system registration state rather than a saved preference.
 enum LaunchAtLogin {
     static var isEnabled: Bool {
         SMAppService.mainApp.status == .enabled
     }
 
-    static func setEnabled(_ enabled: Bool) {
-        do {
-            if enabled {
-                if SMAppService.mainApp.status != .enabled {
-                    try SMAppService.mainApp.register()
-                }
-            } else {
-                if SMAppService.mainApp.status == .enabled {
-                    try SMAppService.mainApp.unregister()
-                }
+    static var requiresApproval: Bool {
+        SMAppService.mainApp.status == .requiresApproval
+    }
+
+    static func openSettings() {
+        SMAppService.openSystemSettingsLoginItems()
+    }
+
+    static func setEnabled(_ enabled: Bool) throws {
+        let service = SMAppService.mainApp
+        if enabled {
+            if service.status == .notRegistered || service.status == .notFound {
+                try service.register()
             }
-        } catch {
-            // Swallow — surfaced via .isEnabled re-read on next UI tick.
+            if service.status == .requiresApproval { openSettings() }
+        } else if service.status == .enabled || service.status == .requiresApproval {
+            // A registration awaiting approval still needs to be unregistered.
+            try service.unregister()
         }
     }
 }

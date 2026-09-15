@@ -19,6 +19,7 @@ public enum PositionCalculator {
         visibleFrame: CGRect,
         thirdsState: ThirdsCycler.State = .init()
     ) -> CGRect? {
+        guard windowFrame.isUsableWindowFrame, visibleFrame.isUsableWindowFrame else { return nil }
         switch action {
         case .leftHalf:
             return CGRect(x: visibleFrame.minX, y: visibleFrame.minY,
@@ -121,19 +122,23 @@ public enum PositionCalculator {
 
     private static func resize(_ frame: CGRect, edge: Edge, by delta: CGFloat, in bounds: CGRect) -> CGRect {
         var f = frame
+        // Clamp a shrinking edge before changing its origin, keeping the
+        // opposite edge fixed even when a window is narrower than the step.
+        let horizontalDelta = max(delta, 1 - f.width)
+        let verticalDelta = max(delta, 1 - f.height)
         switch edge {
         case .minX:
             // Extending left: x decreases, width grows. Shrinking: opposite.
-            let dx = min(delta, f.minX - bounds.minX)
+            let dx = delta > 0 ? min(delta, max(0, f.minX - bounds.minX)) : horizontalDelta
             f.origin.x -= dx; f.size.width += dx
         case .maxX:
-            let dx = min(delta, bounds.maxX - f.maxX)
+            let dx = delta > 0 ? min(delta, max(0, bounds.maxX - f.maxX)) : horizontalDelta
             f.size.width += dx
         case .minY:
-            let dy = min(delta, f.minY - bounds.minY)
+            let dy = delta > 0 ? min(delta, max(0, f.minY - bounds.minY)) : verticalDelta
             f.origin.y -= dy; f.size.height += dy
         case .maxY:
-            let dy = min(delta, bounds.maxY - f.maxY)
+            let dy = delta > 0 ? min(delta, max(0, bounds.maxY - f.maxY)) : verticalDelta
             f.size.height += dy
         }
         // Clamp minimum size so we never produce negative dimensions when shrinking.
@@ -150,8 +155,8 @@ public enum ThirdSlot: Int, Sendable, Codable { case first = 0, second = 1, thir
 /// behavior where Cmd+Opt+Ctrl+Left cycles left → center → right → left.
 public struct ThirdsCycler: Sendable {
     public struct State: Sendable, Equatable {
-        public var horizontal: ThirdSlot = .first
-        public var vertical: ThirdSlot = .first
+        public var horizontal: ThirdSlot = .third
+        public var vertical: ThirdSlot = .third
         public init() {}
         public var nextHorizontal: ThirdSlot { advance(horizontal) }
         public var nextVertical: ThirdSlot { advance(vertical) }

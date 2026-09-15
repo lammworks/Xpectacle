@@ -1,0 +1,18 @@
+Xpectacle 2.0.0 — Golden Gate compatibility preview
+
+1. Drag Xpectacle.app to Applications.
+2. Open Xpectacle from Applications.
+3. This preview is ad-hoc signed and is not notarized by Apple. macOS may block
+   the first launch. If you trust this release, use System Settings > Privacy &
+   Security > Open Anyway after attempting to open it.
+4. Grant Xpectacle access in System Settings > Privacy & Security > Accessibility.
+   No Screen Recording permission is required.
+5. Use the menu bar grid icon to open Settings and configure shortcuts and snapping.
+
+Requires macOS 14 or newer. Includes native Apple Silicon and Intel binaries.
+Quit Spectacle or other window managers if their shortcuts conflict.
+
+Updates: https://github.com/lammworks/Xpectacle/releases
+Source and license: https://github.com/lammworks/Xpectacle
+
+This preview has no automatic updater. Its Settings/Updates link opens GitHub.

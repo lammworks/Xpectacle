@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "XpectacleCore", targets: ["XpectacleCore"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.0"),
+        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", exact: "2.4.0"),
     ],
     targets: [
         .target(

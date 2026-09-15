@@ -2,9 +2,12 @@
 import AppIntents
 import Foundation
 
-/// One App Intent surface for every `WindowAction`. App Intents auto-register
-/// with Shortcuts, Spotlight, and Siri, so once this file is in the app bundle
-/// the user can say "Hey Siri, snap window to left half".
+/// Makes this package's intents discoverable when the app includes the package
+/// in its own AppIntentsPackage declaration.
+public struct XpectacleCoreAppIntentsPackage: AppIntentsPackage {}
+
+/// Configurable Shortcuts action. Spoken invocations require the user to create
+/// a named shortcut; defining an AppIntent alone does not register Siri phrases.
 public struct PerformWindowAction: AppIntent {
     public static var title: LocalizedStringResource = "Perform Window Action"
     public static var description = IntentDescription("Apply a Xpectacle window action to the frontmost window.")
@@ -16,6 +19,8 @@ public struct PerformWindowAction: AppIntent {
     public init(action: WindowAction) { self.action = .init(action: action) }
 
     public func perform() async throws -> some IntentResult {
+        let settings = await SettingsStore.shared.current
+        await WindowController.shared.setDisabledBundleIDs(settings.disabledBundleIDs)
         try await WindowController.shared.perform(action.action)
         return .result()
     }
@@ -24,6 +29,7 @@ public struct PerformWindowAction: AppIntent {
 public struct ApplyLayoutIntent: AppIntent {
     public static var title: LocalizedStringResource = "Apply Layout"
     public static var description = IntentDescription("Apply a saved Xpectacle layout.")
+    public static var openAppWhenRun: Bool = false
 
     @Parameter(title: "Layout") public var layoutName: String
 

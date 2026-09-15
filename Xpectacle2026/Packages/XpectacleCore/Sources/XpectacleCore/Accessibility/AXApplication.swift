@@ -25,8 +25,10 @@ public struct AXApplication: @unchecked Sendable {
     public func focusedWindow() throws -> AXWindow {
         var value: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(element, kAXFocusedWindowAttribute as CFString, &value)
-        guard result == .success, let raw = value else { throw AXFailure.noFocusedWindow }
-        // CFTypeRef returned here is an AXUIElement; force-cast is the documented pattern.
+        guard result == .success, let raw = value,
+              CFGetTypeID(raw) == AXUIElementGetTypeID()
+        else { throw AXFailure.noFocusedWindow }
+        // A CF cast is safe only after checking the runtime type ID.
         let win = raw as! AXUIElement
         return AXWindow(element: win, owner: self)
     }

@@ -28,3 +28,6 @@ Xpectacle2026/Packages/XpectacleCore/.build/
 Xpectacle2026/Packages/XpectacleCore/.swiftpm/
 .DS_Store
 
+
+.build-codex/
+.swift-module-cache/

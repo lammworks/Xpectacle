@@ -4,22 +4,19 @@ import AppKit
 import CoreGraphics
 import Foundation
 
-/// Serializes all Accessibility I/O. AX is not thread-safe and on Sonoma+
-/// has surprising retry semantics around space/Stage Manager transitions —
-/// funneling everything through one actor avoids both classes of race.
+/// Serializes window actions and their history updates. Screen and frontmost
+/// application snapshots are read on the main actor before Accessibility I/O.
 public actor WindowController {
-    /// Process-wide controller used by App Intents, the menu bar, and hotkeys.
     public static let shared = WindowController()
 
     private let mover: any WindowMover
     private let detector: ScreenDetector
     private let stageManager: StageManagerProbe
-    private var thirds = ThirdsCycler.State()
+    private var thirdsByWindow: [String: ThirdsCycler.State] = [:]
     private var history = UndoStack()
-    /// Bundle IDs that should bypass all window actions. Mirrors
-    /// `Settings.disabledBundleIDs`; the App tier pushes updates via
-    /// `setDisabledBundleIDs(_:)` so the actor doesn't read settings on the hot path.
     private var disabledBundleIDs: Set<String> = []
+    private var windowKeys: [AXWindowIdentity: (key: String, lastAccess: Int)] = [:]
+    private var accessCounter = 0
 
     public init(
         mover: any WindowMover = MoverChain.standard(),
@@ -35,76 +32,116 @@ public actor WindowController {
         disabledBundleIDs = Set(ids.map { $0.lowercased() })
     }
 
-    /// Run an action against the frontmost window.
     public func perform(_ action: WindowAction) async throws {
+        try await perform(action, capturedWindow: nil, targetScreenID: nil)
+    }
+
+    /// Drag snapping must act on the captured dragged window and hovered
+    /// display, even if focus changes between mouse-down and mouse-up.
+    public func perform(_ action: WindowAction, on window: AXWindow, targetScreenID: String? = nil) async throws {
+        try await perform(action, capturedWindow: window, targetScreenID: targetScreenID)
+    }
+
+    private func perform(_ action: WindowAction, capturedWindow: AXWindow?, targetScreenID: String?) async throws {
         try ensureAccessibilityTrusted()
+        let (window, screens, primaryHeight) = try await readContext(window: capturedWindow)
+        if let bid = window.owner.bundleIdentifier?.lowercased(), disabledBundleIDs.contains(bid) { return }
+        guard window.isMovableAndResizable() else { throw AXFailure.windowNotMovable }
+        // Read the frame after the final suspension point so rapidly queued
+        // hotkeys observe the preceding move instead of a stale snapshot.
+        let currentFrame = try window.frameInAppKit(primaryHeight: primaryHeight)
+        let key = historyKey(for: window)
+        let mover = self.mover
 
-        let (window, screens, primaryHeight, currentFrame) = try await readContext()
-        if let bid = window.owner.bundleIdentifier?.lowercased(),
-           disabledBundleIDs.contains(bid) { return }
-
-        // Undo / redo short-circuit before any geometry math.
         switch action {
-        case .undoLastMove:
-            if let prev = history.undo(for: window.identityKey) {
-                try mover.move(window: window, to: prev, primaryHeight: primaryHeight)
+        case .undoLastMove, .undoLastMoveAcrossDisplays:
+            try history.undo(for: key) { frame in
+                try mover.move(window: window, to: frame, primaryHeight: primaryHeight)
             }
             return
-        case .redoLastMove:
-            if let next = history.redo(for: window.identityKey) {
-                try mover.move(window: window, to: next, primaryHeight: primaryHeight)
+        case .redoLastMove, .redoLastMoveAcrossDisplays:
+            try history.redo(for: key) { frame in
+                try mover.move(window: window, to: frame, primaryHeight: primaryHeight)
             }
             return
         default:
             break
         }
 
-        guard let target = detector.targetScreen(for: action, windowFrame: currentFrame, screens: screens)
-        else { return }
-
-        // Stage Manager: when the shelf is auto-hidden, NSScreen.visibleFrame
-        // doesn't account for it, so we conservatively shrink the usable rect.
+        let target: ScreenInfo?
+        if let targetScreenID {
+            // A disconnected display must not silently redirect a drag.
+            target = screens.first { $0.id == targetScreenID }
+        } else {
+            target = detector.targetScreen(for: action, windowFrame: currentFrame, screens: screens)
+        }
+        guard let target else { return }
         let visible = stageManager.adjustedVisibleFrame(target.visibleFrame)
+        var thirds = thirdsByWindow[key, default: .init()]
         let newFrame: CGRect
         if action.changesDisplay {
             newFrame = scaled(currentFrame, fromVisible: detector.screen(containing: currentFrame, in: screens)?.visibleFrame ?? visible, toVisible: visible)
         } else if let calc = PositionCalculator.calculate(
-            action: action,
-            windowFrame: currentFrame,
-            visibleFrame: visible,
-            thirdsState: thirds
+            action: action, windowFrame: currentFrame, visibleFrame: visible, thirdsState: thirds
         ) {
             newFrame = calc
         } else {
             return
         }
+        guard newFrame.isUsableWindowFrame else { throw AXFailure.invalidFrame }
+        if newFrame != currentFrame {
+            try mover.move(window: window, to: newFrame, primaryHeight: primaryHeight)
+            // Applications can impose minimum sizes or round to a text-cell grid.
+            // Redo must restore the actual result, and a failed move must not
+            // destroy the existing redo tail.
+            let actualFrame = try window.frameInAppKit(primaryHeight: primaryHeight)
+            history.record(for: key, before: currentFrame, after: actualFrame)
+            guard actualFrame != currentFrame else { return }
+        }
 
-        history.record(for: window.identityKey, before: currentFrame, after: newFrame)
-        try mover.move(window: window, to: newFrame, primaryHeight: primaryHeight)
-
-        // Update thirds cycle bookkeeping.
         switch action {
         case .nextThirdHorizontal: thirds.horizontal = thirds.nextHorizontal
         case .nextThirdVertical: thirds.vertical = thirds.nextVertical
         default: break
         }
+        thirdsByWindow[key] = thirds
     }
 
-    private func readContext() async throws -> (AXWindow, [ScreenInfo], CGFloat, CGRect) {
+    private func readContext(window: AXWindow?) async throws -> (AXWindow, [ScreenInfo], CGFloat) {
         try await MainActor.run {
-            let app = try AXApplication.frontmost()
-            let window = try app.focusedWindow()
+            let targetWindow: AXWindow
+            if let window {
+                targetWindow = window
+            } else {
+                targetWindow = try AXApplication.frontmost().focusedWindow()
+            }
             let screens = ScreenInfo.current
-            let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
-            let frame = try window.frameInAppKit(primaryHeight: primaryHeight)
-            return (window, screens, primaryHeight, frame)
+            guard let primaryHeight = NSScreen.screens.first?.frame.height, primaryHeight > 0
+            else { throw AXFailure.invalidFrame }
+            return (targetWindow, screens, primaryHeight)
         }
     }
 
-    /// When moving across displays, scale the window proportionally to the
-    /// destination's visible frame.
+    private func historyKey(for window: AXWindow) -> String {
+        let identity = AXWindowIdentity(element: window.element, processIdentifier: window.owner.processIdentifier)
+        accessCounter += 1
+        if let entry = windowKeys[identity] {
+            windowKeys[identity] = (entry.key, accessCounter)
+            return entry.key
+        }
+        // Bound retained remote AX references and history in a long-running app.
+        if windowKeys.count >= 128, let oldest = windowKeys.min(by: { $0.value.lastAccess < $1.value.lastAccess }) {
+            windowKeys.removeValue(forKey: oldest.key)
+            history.remove(for: oldest.value.key)
+            thirdsByWindow.removeValue(forKey: oldest.value.key)
+        }
+        let key = UUID().uuidString
+        windowKeys[identity] = (key, accessCounter)
+        return key
+    }
+
     private func scaled(_ frame: CGRect, fromVisible from: CGRect, toVisible to: CGRect) -> CGRect {
-        guard from.width > 0, from.height > 0 else { return frame }
+        guard from.isUsableWindowFrame, to.isUsableWindowFrame else { return frame }
         let sx = to.width / from.width
         let sy = to.height / from.height
         return CGRect(
@@ -113,16 +150,5 @@ public actor WindowController {
             width: frame.width * sx,
             height: frame.height * sy
         ).integral
-    }
-}
-
-extension AXWindow {
-    /// Stable enough key to bucket undo history per-window. AX doesn't expose
-    /// a window UUID, so we combine pid + title hash. Good enough for undo.
-    var identityKey: String {
-        var titleRef: CFTypeRef?
-        AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &titleRef)
-        let title = (titleRef as? String) ?? ""
-        return "\(owner.processIdentifier):\(title)"
     }
 }

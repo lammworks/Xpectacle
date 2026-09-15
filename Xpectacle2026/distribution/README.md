@@ -1,36 +1,51 @@
 # Distribution
 
-## One-time setup
+The initial Golden Gate release is a compatibility **preview**, ad-hoc signed and
+not notarized. Do not describe it as Developer ID signed or Gatekeeper approved.
+Updates are manual through the GitHub Releases menu item. Automatic updates are
+intentionally disabled until a real signing identity and signed feed exist.
 
-1. Generate Sparkle EdDSA keys:
-   ```bash
-   ./scripts/generate_keys
-   ```
-   This prints a public key — paste it into `project.yml` under `SUPublicEDKey` and re-run `xcodegen`.
+## Build a reproducible release
 
-2. Apple Developer ID signing certificate installed in Keychain.
-
-## Release flow
+Requirements: macOS, full Xcode, and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+The app and package pin KeyboardShortcuts 2.4.0. The app supports macOS 14+.
 
 ```bash
-xcodegen                      # regen project from project.yml
-xcodebuild -scheme Xpectacle -configuration Release -archivePath build/Xpectacle.xcarchive archive
-xcodebuild -exportArchive -archivePath build/Xpectacle.xcarchive \
-    -exportOptionsPlist distribution/exportOptions.plist \
-    -exportPath build/Export
-
-# Sign + notarize
-xcrun notarytool submit build/Export/Xpectacle.app --keychain-profile "AC_PROFILE" --wait
-xcrun stapler staple build/Export/Xpectacle.app
-
-# Build DMG
-hdiutil create -volname Xpectacle -srcfolder build/Export/Xpectacle.app -ov -format UDZO build/Xpectacle-2.0.0.dmg
-
-# Sparkle signature
-./scripts/sign_update build/Xpectacle-2.0.0.dmg
-# → outputs sparkle:edSignature attribute; paste into appcast.xml
+# Select the installed full Xcode for this command without changing system settings.
+export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
+# Choose a fresh output directory for each release build.
+export XPECTACLE_BUILD_DIR=/tmp/xpectacle-release
+./Xpectacle2026/scripts/build-release.sh
 ```
 
-## Hosting the appcast
+The script runs package tests, generates the Xcode project, builds arm64 + x86_64,
+assembles the app and license, signs it, verifies the binary and signature,
+creates/verifies the DMG, and writes SHA256SUMS.txt. It does not publish anything.
 
-Push `appcast.xml` and the `.dmg` to the `gh-pages` branch of `lammworks/xpectacle`. The app's `SUFeedURL` points at `https://lammworks.github.io/xpectacle/appcast.xml`.
+The DMG contains the app, Applications shortcut, and installation instructions.
+Attach the DMG and SHA256SUMS.txt to the GitHub release for the exact source commit.
+Download the published asset again and compare its SHA-256 before declaring success.
+
+## Developer ID / notarized release
+
+Install the project's Developer ID certificate and configure a notarytool Keychain
+profile first. Then set both values before invoking the same script:
+
+```bash
+export XPECTACLE_SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)'
+export XPECTACLE_NOTARY_PROFILE='xpectacle-notary'
+```
+
+The script submits a ZIP of the signed app, staples its ticket, then creates,
+signs, notarizes, and staples the DMG. Verify the downloaded DMG with `spctl` on a
+clean Mac. Update INSTALL.txt before publishing a notarized stable release.
+
+## Acceptance checks
+
+- All package tests and the universal Release build pass.
+- DMG verifies and mounts; the app's signature and both architectures verify.
+- Launch on Golden Gate; inspect menu and Settings tabs.
+- Grant/revoke Accessibility and verify actions disable/recover.
+- Test halves, corners, thirds, undo/redo, and snapping in more than one app.
+- Test two physical displays, full-screen Spaces, Stage Manager, and login/reboot.
+- Record untested cases explicitly in release notes.

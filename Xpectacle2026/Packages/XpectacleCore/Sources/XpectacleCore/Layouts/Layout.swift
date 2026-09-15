@@ -47,6 +47,11 @@ public struct LayoutSlot: Codable, Sendable, Hashable {
     public init(matcher: AppMatcher, displayIndex: Int, frame: NormalizedRect) {
         self.matcher = matcher; self.displayIndex = displayIndex; self.frame = frame
     }
+
+    func resolvedDisplayIndex(screenCount: Int) -> Int? {
+        guard screenCount > 0 else { return nil }
+        return max(0, min(displayIndex, screenCount - 1))
+    }
 }
 
 public struct Layout: Codable, Sendable, Hashable, Identifiable {

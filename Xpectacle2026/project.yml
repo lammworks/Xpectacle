@@ -13,7 +13,7 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     ENABLE_HARDENED_RUNTIME: YES
     CODE_SIGN_STYLE: Automatic
-    SWIFT_STRICT_CONCURRENCY: minimal
+    SWIFT_STRICT_CONCURRENCY: complete
     DEAD_CODE_STRIPPING: YES
     GENERATE_INFOPLIST_FILE: NO
     ALWAYS_SEARCH_USER_PATHS: NO
@@ -26,10 +26,7 @@ packages:
     path: Packages/XpectacleCore
   KeyboardShortcuts:
     url: https://github.com/sindresorhus/KeyboardShortcuts
-    from: 2.2.0
-  Sparkle:
-    url: https://github.com/sparkle-project/Sparkle
-    from: 2.6.0
+    exactVersion: 2.4.0
 
 targets:
   Xpectacle:
@@ -46,16 +43,13 @@ targets:
         CFBundleName: Xpectacle
         CFBundleDisplayName: Xpectacle
         CFBundleIdentifier: com.xpectacle.Xpectacle
-        CFBundleVersion: "2.0.0"
+        CFBundleVersion: "1"
         CFBundleShortVersionString: "2.0.0"
         CFBundlePackageType: APPL
         LSMinimumSystemVersion: "14.0"
         LSUIElement: true
         NSHumanReadableCopyright: "MIT-licensed. Successor to Spectacle by Eric Czarny."
         NSAccessibilityUsageDescription: "Xpectacle uses the Accessibility API to read and set window frames, which is required for every window action and snap zone."
-        SUFeedURL: "https://lammworks.github.io/xpectacle/appcast.xml"
-        SUEnableAutomaticChecks: true
-        SUPublicEDKey: "REPLACE_WITH_GENERATED_EDDSA_PUBLIC_KEY"
     entitlements:
       path: App/Resources/Xpectacle.entitlements
       properties:
@@ -64,7 +58,6 @@ targets:
     dependencies:
       - package: XpectacleCore
       - package: KeyboardShortcuts
-      - package: Sparkle
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xpectacle.Xpectacle

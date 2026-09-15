@@ -20,8 +20,15 @@ public actor LayoutEngine {
         guard !screens.isEmpty else { return }
 
         let runningApps = await MainActor.run { NSWorkspace.shared.runningApplications }
+        var usedWindows: Set<AXWindowIdentity> = []
+        // Validate all matchers before moving the first window.
+        let matchers = try layout.slots.map { slot in
+            try slot.matcher.titleRegex.map { try NSRegularExpression(pattern: $0) }
+        }
 
-        for slot in layout.slots {
+        for (slot, regex) in zip(layout.slots, matchers) {
+            // A malformed matcher must fail rather than move an arbitrary
+            // window after silently dropping its title restriction.
             guard let app = runningApps.first(where: {
                 $0.bundleIdentifier?.caseInsensitiveCompare(slot.matcher.bundleID) == .orderedSame
             }) else { continue }
@@ -30,10 +37,11 @@ public actor LayoutEngine {
                 processIdentifier: app.processIdentifier,
                 bundleIdentifier: app.bundleIdentifier
             )
-            let windows = (try? axApp.allWindows()) ?? []
+            let windows = ((try? axApp.allWindows()) ?? []).filter {
+                $0.isMovableAndResizable() && !usedWindows.contains(AXWindowIdentity(element: $0.element, processIdentifier: app.processIdentifier))
+            }
             let candidates: [AXWindow]
-            if let pattern = slot.matcher.titleRegex,
-               let regex = try? NSRegularExpression(pattern: pattern) {
+            if let regex {
                 candidates = windows.filter { w in
                     guard let t = (try? w.title()) ?? nil else { return false }
                     let range = NSRange(t.startIndex..., in: t)
@@ -44,9 +52,12 @@ public actor LayoutEngine {
             }
             guard let target = candidates.first else { continue }
 
-            let display = screens[min(slot.displayIndex, screens.count - 1)]
+            guard let displayIndex = slot.resolvedDisplayIndex(screenCount: screens.count) else { continue }
+            let display = screens[displayIndex]
             let frame = slot.frame.denormalized(in: display.visibleFrame)
+            guard frame.isUsableWindowFrame else { throw AXFailure.invalidFrame }
             try mover.move(window: target, to: frame, primaryHeight: primaryHeight)
+            usedWindows.insert(AXWindowIdentity(element: target.element, processIdentifier: app.processIdentifier))
         }
     }
 
@@ -68,12 +79,13 @@ public actor LayoutEngine {
                 bundleIdentifier: bid
             )
             for win in (try? axApp.allWindows()) ?? [] {
+                guard win.isMovableAndResizable() else { continue }
                 guard let frame = try? win.frameInAppKit(primaryHeight: primaryHeight) else { continue }
                 guard let display = (ScreenDetector().screen(containing: frame, in: screens)),
                       let displayIndex = screens.firstIndex(where: { $0.id == display.id })
                 else { continue }
                 let title = (try? win.title()) ?? nil
-                let escaped = title.map { NSRegularExpression.escapedPattern(for: $0) }
+                let escaped = title.map { "^" + NSRegularExpression.escapedPattern(for: $0) + "$" }
                 slots.append(.init(
                     matcher: AppMatcher(bundleID: bid, titleRegex: escaped),
                     displayIndex: displayIndex,
@@ -90,8 +102,12 @@ extension AXApplication {
     public func allWindows() throws -> [AXWindow] {
         var raw: CFTypeRef?
         let r = AXUIElementCopyAttributeValue(element, kAXWindowsAttribute as CFString, &raw)
-        guard r == .success, let arr = raw as? [AXUIElement] else { return [] }
-        return arr.map { AXWindow(element: $0, owner: self) }
+        guard r == .success, let raw, CFGetTypeID(raw) == CFArrayGetTypeID(),
+              let values = raw as? [AnyObject] else { return [] }
+        return values.compactMap { value in
+            guard CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
+            return AXWindow(element: value as! AXUIElement, owner: self)
+        }
     }
 }
 

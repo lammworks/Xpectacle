@@ -1,19 +1,23 @@
 import ApplicationServices
 import Foundation
 
-public enum AXFailure: Error, Sendable {
+public enum AXFailure: LocalizedError, Sendable {
     case notTrusted
     case noFrontmostApp
     case noFocusedWindow
     case attributeUnavailable(String)
+    case invalidFrame
+    case windowNotMovable
     case underlying(AXError)
 
-    public var localizedDescription: String {
+    public var errorDescription: String? {
         switch self {
         case .notTrusted: "Xpectacle is not a trusted Accessibility client. Grant access in System Settings → Privacy & Security → Accessibility."
         case .noFrontmostApp: "No frontmost application."
         case .noFocusedWindow: "Frontmost application has no focused window."
         case .attributeUnavailable(let attr): "AX attribute unavailable: \(attr)"
+        case .invalidFrame: "The window or display has an invalid frame."
+        case .windowNotMovable: "This window does not support moving or resizing."
         case .underlying(let err): "AXError(\(err.rawValue))"
         }
     }
