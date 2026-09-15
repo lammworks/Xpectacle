@@ -47,7 +47,8 @@ else
 fi
 codesign "${SIGN_OPTIONS[@]}" "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-lipo -verify_arch arm64 x86_64 "$APP_PATH/Contents/MacOS/Xpectacle"
+ARCHITECTURES="$(lipo -archs "$APP_PATH/Contents/MacOS/Xpectacle")"
+[[ " $ARCHITECTURES " == *" arm64 "* && " $ARCHITECTURES " == *" x86_64 "* ]]
 
 if [[ -n "${XPECTACLE_NOTARY_PROFILE:-}" ]]; then
   if [[ "$SIGNING_IDENTITY" == "-" ]]; then
