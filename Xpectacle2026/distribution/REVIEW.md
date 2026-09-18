@@ -82,10 +82,25 @@ repair. A successful build or unit test does not establish that runtime result.
   its bundle ID, Apple's Developer ID certificate chain, and team K567UPF58F,
   rather than a build-specific ad-hoc hash.
 - DMG checksum verification and read-only mount passed.
-- Apple notarization credentials were unavailable. Gatekeeper assessment reports
+- This release was not submitted for Apple notarization. Gatekeeper reported
   `Unnotarized Developer ID`; this is a signed, unnotarized compatibility preview.
 - Real window movement, physical multi-display behavior, Stage Manager, and
   login/reboot remain outside this release's verified runtime scope.
+
+## Version 2.0.2 notarization verification — 2026-09-18
+
+- Version 2.0.2 (build 3) changes distribution metadata and documentation only;
+  window-management behavior is unchanged from 2.0.1.
+- 50 Swift Testing tests and 5 XCTest tests passed; universal Release build passed.
+- Existing `lavanda-notary` authentication succeeded after unlocking the Mac.
+- Apple accepted app submission `9762514a-8b11-4f0a-aeb7-65251f5d1cfd` and
+  DMG submission `1e1b40e6-6b01-453e-a195-797fd8a6db85`.
+- Both tickets were stapled and validated. Strict signatures verify, and
+  Gatekeeper accepts both artifacts as `Notarized Developer ID`.
+- The final DMG verifies and mounts read-only. Its packaged app has a valid
+  ticket, is accepted by Gatekeeper, and reports version 2.0.2, build 3.
+- Runtime verification limits remain as stated above. Apple notarization does
+  not establish live window-management, multi-display, or login/reboot behavior.
 
 ## Apple sources checked
 

@@ -1,10 +1,10 @@
-Xpectacle 2.0.1 — Developer ID signed release
+Xpectacle 2.0.2 — Developer ID signed and notarized release
 
 1. Drag Xpectacle.app to Applications.
 2. Open Xpectacle from Applications.
-3. This release is signed by Ondemand Technologies Inc (Apple team K567UPF58F).
-   Apple notarization is a separate check; its status is stated in the GitHub
-   release notes.
+3. This release is signed by Ondemand Technologies Inc (Apple team K567UPF58F)
+   and notarized by Apple. The app includes its notarization ticket for offline
+   verification. macOS may still show its normal downloaded-app confirmation.
 4. Grant Xpectacle access in System Settings > Privacy & Security > Device Control
    and Data Access (called Accessibility on earlier versions of macOS).
    No Screen Recording permission is required.

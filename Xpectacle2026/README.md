@@ -45,10 +45,10 @@ and remaining manual checks belong in the release notes.
 
 ## Distribution limits
 
-Version 2.0.1 uses Developer ID signing. Upgrading from the earlier ad-hoc
-preview may require refreshing Xpectacle's existing Accessibility permission
-once. The Permissions tab explains this recovery. Notarization status is recorded
-in each GitHub release; signing alone does not imply notarization.
+Version 2.0.2 uses Developer ID signing and Apple notarization. Upgrading from the
+earlier ad-hoc preview may require refreshing Xpectacle's existing Accessibility
+permission once. The Permissions tab explains this recovery. Each release records its
+verification results and any remaining runtime limitations.
 
 Updates open GitHub Releases; there is no background downloader or automatic
 installer. The release script supports Developer ID signing and optional Apple
