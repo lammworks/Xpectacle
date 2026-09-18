@@ -11,7 +11,6 @@ DERIVED_DIR="$BUILD_DIR/DerivedData"
 STAGING_DIR="$BUILD_DIR/dmg-root"
 APP_PATH="$STAGING_DIR/Xpectacle.app"
 SIGNING_IDENTITY="${XPECTACLE_SIGNING_IDENTITY:--}"
-VERSION=2.0.0
 
 command -v xcodegen >/dev/null
 xcrun --find swift >/dev/null
@@ -34,6 +33,11 @@ if [[ -e "$STAGING_DIR" ]]; then
 fi
 mkdir -p "$STAGING_DIR"
 ditto --norsrc --noextattr "$DERIVED_DIR/Build/Products/Release/Xpectacle.app" "$APP_PATH"
+VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
+if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+  echo "Invalid CFBundleShortVersionString in built app: $VERSION" >&2
+  exit 1
+fi
 cp "$REPO_DIR/LICENSE.md" "$APP_PATH/Contents/Resources/LICENSE.md"
 cp "$PROJECT_DIR/distribution/INSTALL.txt" "$STAGING_DIR/READ ME.txt"
 ln -s /Applications "$STAGING_DIR/Applications"
@@ -59,17 +63,23 @@ if [[ -n "${XPECTACLE_NOTARY_PROFILE:-}" ]]; then
   xcrun notarytool submit "$BUILD_DIR/Xpectacle-notarization.zip" \
     --keychain-profile "$XPECTACLE_NOTARY_PROFILE" --wait
   xcrun stapler staple "$APP_PATH"
+  xcrun stapler validate "$APP_PATH"
+  spctl --assess --type execute --verbose=2 "$APP_PATH"
 fi
 
 DMG_PATH="$BUILD_DIR/Xpectacle-$VERSION.dmg"
 hdiutil create -volname "Xpectacle $VERSION" -srcfolder "$STAGING_DIR" \
   -format UDZO "$DMG_PATH"
 hdiutil verify "$DMG_PATH"
-if [[ -n "${XPECTACLE_NOTARY_PROFILE:-}" ]]; then
+if [[ "$SIGNING_IDENTITY" != "-" ]]; then
   codesign --force --sign "$SIGNING_IDENTITY" --timestamp "$DMG_PATH"
+  codesign --verify --strict --verbose=2 "$DMG_PATH"
+fi
+if [[ -n "${XPECTACLE_NOTARY_PROFILE:-}" ]]; then
   xcrun notarytool submit "$DMG_PATH" --keychain-profile "$XPECTACLE_NOTARY_PROFILE" --wait
   xcrun stapler staple "$DMG_PATH"
   xcrun stapler validate "$DMG_PATH"
+  spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG_PATH"
 fi
 (cd "$BUILD_DIR" && shasum -a 256 "Xpectacle-$VERSION.dmg" > SHA256SUMS.txt)
 printf '\nBuilt %s\n' "$DMG_PATH"

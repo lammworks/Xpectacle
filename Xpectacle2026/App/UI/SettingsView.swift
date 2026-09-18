@@ -6,13 +6,16 @@ struct SettingsView: View {
     let model: AppModel
 
     var body: some View {
-        TabView {
-            ShortcutsTab().tabItem { Label("Shortcuts", systemImage: "command") }
-            SnapZonesTab(model: model).tabItem { Label("Snap Zones", systemImage: "rectangle.split.3x1") }
-            LayoutsTab(model: model).tabItem { Label("Layouts", systemImage: "square.grid.2x2") }
-            GeneralTab(model: model).tabItem { Label("General", systemImage: "gearshape") }
-            UpdatesTab(model: model).tabItem { Label("Updates", systemImage: "arrow.down.circle") }
-            PermissionsTab(model: model).tabItem { Label("Permissions", systemImage: "lock.shield") }
+        TabView(selection: Binding(
+            get: { model.selectedSettingsTab },
+            set: { model.selectedSettingsTab = $0 }
+        )) {
+            ShortcutsTab().tabItem { Label("Shortcuts", systemImage: "command") }.tag(SettingsTab.shortcuts)
+            SnapZonesTab(model: model).tabItem { Label("Snap Zones", systemImage: "rectangle.split.3x1") }.tag(SettingsTab.snapZones)
+            LayoutsTab(model: model).tabItem { Label("Layouts", systemImage: "square.grid.2x2") }.tag(SettingsTab.layouts)
+            GeneralTab(model: model).tabItem { Label("General", systemImage: "gearshape") }.tag(SettingsTab.general)
+            UpdatesTab(model: model).tabItem { Label("Updates", systemImage: "arrow.down.circle") }.tag(SettingsTab.updates)
+            PermissionsTab(model: model).tabItem { Label("Permissions", systemImage: "lock.shield") }.tag(SettingsTab.permissions)
         }
         .padding()
         .disabled(!model.settingsLoaded)
@@ -196,18 +199,47 @@ struct PermissionsTab: View {
     let model: AppModel
     var body: some View {
         Form {
-            HStack {
-                Image(systemName: model.accessibilityTrusted ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundStyle(model.accessibilityTrusted ? .green : .red)
-                Text("Accessibility")
-                Spacer()
+            Section {
+                HStack {
+                    Image(systemName: model.accessibilityTrusted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .foregroundStyle(model.accessibilityTrusted ? .green : .red)
+                        .accessibilityHidden(true)
+                    Text(model.accessibilityTrusted ? "Access granted" : "Access required")
+                        .fontWeight(.medium)
+                    Spacer()
+                    Button("Check Again") { model.refreshSystemState() }
+                }
+                Text("Xpectacle needs permission to read and move other apps’ windows.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                 if !model.accessibilityTrusted {
+                    Text("System Settings → Privacy & Security → \(Permissions.accessibilitySettingsName)")
+                        .font(.callout)
                     Button("Open System Settings") { Permissions.openAccessibilitySettings() }
                 }
             }
-            Text("Xpectacle uses Apple's Accessibility API to read and set window frames. Without this permission no window actions will work.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+
+            if !model.accessibilityTrusted {
+                Section("If Xpectacle’s switch is already on") {
+                    Text("After an update, macOS may keep permission for the previous copy of Xpectacle. The switch can be on while this copy is still denied.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("1. In \(Permissions.accessibilitySettingsName), select Xpectacle and click the minus (−) button.")
+                        Text("2. Click the plus (+) button, choose the app shown below, and turn its switch on.")
+                        Text("3. Quit Xpectacle, then reopen that same app.")
+                    }
+                    .font(.callout)
+                }
+            }
+
+            Section("This copy of Xpectacle") {
+                Text(Permissions.currentApplicationURL.path)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Show in Finder") { Permissions.revealCurrentApplication() }
+            }
         }
         .formStyle(.grouped)
     }

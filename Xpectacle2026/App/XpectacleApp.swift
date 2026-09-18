@@ -8,11 +8,13 @@ struct XpectacleApp: App {
     @State private var appModel = AppModel()
 
     var body: some Scene {
-        MenuBarExtra("Xpectacle", systemImage: "rectangle.split.2x2") {
-            // SwiftUI's MenuBarExtra(.menu) builder is finicky about custom
-            // subviews — inline every item here so the menu always renders.
+        MenuBarExtra(
+            appModel.accessibilityTrusted ? "Xpectacle" : "Xpectacle — Access Required",
+            systemImage: appModel.accessibilityTrusted ? "rectangle.split.2x2" : "exclamationmark.triangle"
+        ) {
             if !appModel.accessibilityTrusted {
-                Button("Grant Accessibility Access…") { Permissions.openAccessibilitySettings() }
+                Text("Window control is blocked by macOS.")
+                ReviewPermissionsButton(model: appModel)
                 Divider()
             }
 
@@ -57,6 +59,19 @@ struct XpectacleApp: App {
         Settings {
             SettingsView(model: appModel)
                 .frame(minWidth: 720, minHeight: 480)
+        }
+    }
+}
+
+private struct ReviewPermissionsButton: View {
+    let model: AppModel
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Button("Review Permissions…") {
+            model.selectedSettingsTab = .permissions
+            NSApp.activate(ignoringOtherApps: true)
+            openSettings()
         }
     }
 }

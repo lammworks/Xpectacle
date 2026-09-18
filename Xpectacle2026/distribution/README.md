@@ -1,7 +1,8 @@
 # Distribution
 
-The initial Golden Gate release is a compatibility **preview**, ad-hoc signed and
-not notarized. Do not describe it as Developer ID signed or Gatekeeper approved.
+Version 2.0.1 is signed with Developer ID Application. Signing and Apple
+notarization are separate; record the actual notarization result in release notes.
+The earlier 2.0.0 compatibility preview was ad-hoc signed and not notarized.
 Updates are manual through the GitHub Releases menu item. Automatic updates are
 intentionally disabled until a real signing identity and signed feed exist.
 
@@ -12,15 +13,18 @@ The app and package pin KeyboardShortcuts 2.4.0. The app supports macOS 14+.
 
 ```bash
 # Select the installed full Xcode for this command without changing system settings.
-export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 # Choose a fresh output directory for each release build.
-export XPECTACLE_BUILD_DIR=/tmp/xpectacle-release
+export XPECTACLE_BUILD_DIR=/tmp/xpectacle-release-2.0.1
+export XPECTACLE_SIGNING_IDENTITY='Developer ID Application: Ondemand Technologies Inc (K567UPF58F)'
 ./Xpectacle2026/scripts/build-release.sh
 ```
 
 The script runs package tests, generates the Xcode project, builds arm64 + x86_64,
 assembles the app and license, signs it, verifies the binary and signature,
-creates/verifies the DMG, and writes SHA256SUMS.txt. It does not publish anything.
+creates/verifies and signs the DMG, and writes SHA256SUMS.txt. It does not publish
+anything. Omitting the signing identity builds an ad-hoc development artifact;
+do not publish that as the signed release.
 
 The DMG contains the app, Applications shortcut, and installation instructions.
 Attach the DMG and SHA256SUMS.txt to the GitHub release for the exact source commit.
@@ -38,7 +42,8 @@ export XPECTACLE_NOTARY_PROFILE='xpectacle-notary'
 
 The script submits a ZIP of the signed app, staples its ticket, then creates,
 signs, notarizes, and staples the DMG. Verify the downloaded DMG with `spctl` on a
-clean Mac. Update INSTALL.txt before publishing a notarized stable release.
+clean Mac. Do not describe a release as notarized until submission is accepted
+and both tickets validate.
 
 ## Acceptance checks
 

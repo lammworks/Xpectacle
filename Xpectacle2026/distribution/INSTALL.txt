@@ -1,18 +1,36 @@
-Xpectacle 2.0.0 — Golden Gate compatibility preview
+Xpectacle 2.0.1 — Developer ID signed release
 
 1. Drag Xpectacle.app to Applications.
 2. Open Xpectacle from Applications.
-3. This preview is ad-hoc signed and is not notarized by Apple. macOS may block
-   the first launch. If you trust this release, use System Settings > Privacy &
-   Security > Open Anyway after attempting to open it.
-4. Grant Xpectacle access in System Settings > Privacy & Security > Accessibility.
+3. This release is signed by Ondemand Technologies Inc (Apple team K567UPF58F).
+   Apple notarization is a separate check; its status is stated in the GitHub
+   release notes.
+4. Grant Xpectacle access in System Settings > Privacy & Security > Device Control
+   and Data Access (called Accessibility on earlier versions of macOS).
    No Screen Recording permission is required.
 5. Use the menu bar grid icon to open Settings and configure shortcuts and snapping.
 
 Requires macOS 14 or newer. Includes native Apple Silicon and Intel binaries.
 Quit Spectacle or other window managers if their shortcuts conflict.
 
+If access is enabled but windows do not move:
+When upgrading from the earlier ad-hoc signed preview, macOS can retain a
+permission for that older build and display an enabled switch while denying
+access to this signed replacement. Refresh that existing permission once.
+
+1. Quit Xpectacle. Make sure it is installed in /Applications and eject its DMG.
+2. In the privacy pane above, select only Xpectacle and remove it with the minus
+   button. Click plus and add /Applications/Xpectacle.app again, then enable it.
+3. Open /Applications/Xpectacle.app. Its Settings > Permissions tab must show
+   that access is granted. The menu-bar warning icon should become a grid.
+4. Focus a normal Finder window and press Option-Command-Left or
+   Option-Command-Right to verify that it moves.
+
+Future releases signed with this same Developer ID use a stable signing identity.
+If permission is later denied, use the Permissions tab to check the running app
+and follow the recovery instructions.
+
 Updates: https://github.com/lammworks/Xpectacle/releases
 Source and license: https://github.com/lammworks/Xpectacle
 
-This preview has no automatic updater. Its Settings/Updates link opens GitHub.
+Updates are manual. The Settings/Updates link opens GitHub.

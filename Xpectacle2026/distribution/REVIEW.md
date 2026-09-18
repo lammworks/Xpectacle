@@ -49,6 +49,44 @@ Live desktop and package verification results are recorded in the release notes.
 - Legacy PreviousThird and symmetric MakeLarger/MakeSmaller shortcuts have no
   exact equivalent in the current rewrite and are not silently remapped.
 
+## Installed-app permission investigation — 2026-09-16
+
+On macOS 27.0 (26A428), System Settings showed Xpectacle enabled in Device
+Control and Data Access, while the running installed app's public Accessibility
+trust check returned false. Read-only `tccd` logs reported a failure to match
+the saved code requirement for `com.xpectacle.Xpectacle` and
+`kTCCServiceAccessibility`. The saved requirement belonged to an older build;
+the installed bundle's current signature verified successfully.
+
+This blocks shortcuts and drag monitoring before window movement runs. It is
+not evidence of a missing Screen Recording permission or private entitlement.
+Repair the existing grant by removing only Xpectacle from the privacy pane,
+adding the installed app again, and reopening it. Ad-hoc builds can require this
+again after updates; stable Developer ID signing is the distribution fix.
+
+The app now exposes denied access through a warning menu-bar icon and a direct
+Permissions action. That page reports actual trust, identifies the running app
+path, and explains stale-grant recovery. Privacy settings remain under macOS
+control; the app never edits the TCC database or grants itself access.
+
+Live window movement remains pending the user's authentication of the permission
+repair. A successful build or unit test does not establish that runtime result.
+
+## Version 2.0.1 signing verification — 2026-09-17
+
+- Built version 2.0.1 (build 2) on macOS 27.0 (26A428), Xcode 27.0 (27A266a).
+- 50 Swift Testing tests and 5 XCTest tests passed; universal Release build passed.
+- App and DMG signed with Developer ID Application: Ondemand Technologies Inc
+  (K567UPF58F), with secure timestamps. The app uses hardened runtime.
+- Strict signature verification passed. The app's designated requirement uses
+  its bundle ID, Apple's Developer ID certificate chain, and team K567UPF58F,
+  rather than a build-specific ad-hoc hash.
+- DMG checksum verification and read-only mount passed.
+- Apple notarization credentials were unavailable. Gatekeeper assessment reports
+  `Unnotarized Developer ID`; this is a signed, unnotarized compatibility preview.
+- Real window movement, physical multi-display behavior, Stage Manager, and
+  login/reboot remain outside this release's verified runtime scope.
+
 ## Apple sources checked
 
 - [macOS 27 release notes](https://developer.apple.com/documentation/macos-release-notes/macos-27-release-notes)

@@ -45,7 +45,11 @@ and remaining manual checks belong in the release notes.
 
 ## Distribution limits
 
-The first compatibility preview is ad-hoc signed and not notarized. Updates open
-GitHub Releases; there is no background downloader or automatic installer.
-Developer ID signing and notarization can be enabled through the release script
-once the required certificate and notary profile are available.
+Version 2.0.1 uses Developer ID signing. Upgrading from the earlier ad-hoc
+preview may require refreshing Xpectacle's existing Accessibility permission
+once. The Permissions tab explains this recovery. Notarization status is recorded
+in each GitHub release; signing alone does not imply notarization.
+
+Updates open GitHub Releases; there is no background downloader or automatic
+installer. The release script supports Developer ID signing and optional Apple
+notarization through a local Keychain credential profile.

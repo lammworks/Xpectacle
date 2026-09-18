@@ -7,6 +7,7 @@ import XpectacleCore
 final class AppModel {
     var settings: Settings = .default
     var settingsLoaded = false
+    var selectedSettingsTab = SettingsTab.shortcuts
     var accessibilityTrusted = Permissions.isAccessibilityTrusted
     var launchAtLoginEnabled = LaunchAtLogin.isEnabled
     var launchAtLoginNeedsApproval = LaunchAtLogin.requiresApproval
@@ -144,4 +145,8 @@ final class AppModel {
         }
         permissionsTimer?.tolerance = 1
     }
+}
+
+enum SettingsTab: Hashable {
+    case shortcuts, snapZones, layouts, general, updates, permissions
 }

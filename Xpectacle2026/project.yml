@@ -43,8 +43,8 @@ targets:
         CFBundleName: Xpectacle
         CFBundleDisplayName: Xpectacle
         CFBundleIdentifier: com.xpectacle.Xpectacle
-        CFBundleVersion: "1"
-        CFBundleShortVersionString: "2.0.0"
+        CFBundleVersion: "2"
+        CFBundleShortVersionString: "2.0.1"
         CFBundlePackageType: APPL
         LSMinimumSystemVersion: "14.0"
         LSUIElement: true
@@ -62,8 +62,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xpectacle.Xpectacle
         PRODUCT_NAME: Xpectacle
-        MARKETING_VERSION: "2.0.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "2.0.1"
+        CURRENT_PROJECT_VERSION: "2"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         SWIFT_EMIT_LOC_STRINGS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
