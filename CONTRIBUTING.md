@@ -1,36 +1,95 @@
-# Contributing
+# Contributing to Xpectacle
 
-Contributions come in many forms. Creating an issue that documents a previously unreported defect is just as important as sending a pull request. Spectacle can only be great when the folks that use it are passionate about its quality.
+Thank you for helping keep a useful Mac workflow available. Reproducible bug
+reports, compatibility checks, documentation improvements, and focused code
+changes are welcome. Xpectacle is an independent project inspired by Spectacle;
+please report current app issues here rather than to Spectacle's original author.
 
-Before you start working on your contribution to Spectacle please keep reading. For even more information read [Contributing to Open Source on GitHub][1].
+## Report an issue
 
-## Issues
+Check [Support](docs/SUPPORT.md) and search existing
+[issues](https://github.com/lammworks/Xpectacle/issues) first. Use the bug-report
+or feature-request template and describe one problem or proposal at a time.
 
-Before creating a new issue check and make sure somebody hasn't already beat you to it. _Please take this time to also review Spectacle's [common issues][2]_. If your defect or feature request doesn't already exist feel free to create a new issue. When creating a new issue take the time to be as clear and descriptive as possible.
+For a bug, include the Xpectacle version, macOS version, Apple Silicon or Intel,
+affected app, display setup, reproduction steps, and expected versus actual
+behavior. Tell us whether Xpectacle's Permissions tab reports **Access granted**.
+Screenshots or a short recording help when they show the problem safely.
 
-Here are a few things to keep in mind when creating an issue for a potential defect:
+GitHub issues are public. Remove personal information from screenshots and logs.
+Saved layout settings can contain document names and other window titles; do not
+attach an unreviewed settings file. See [Privacy](docs/PRIVACY.md).
 
-* What version of Spectacle did you use when encountering the defect?
-* What version of OS X did you use when encountering the defect?
-* Was there any relevant Spectacle output in the [Console][3]?
+## Build the maintained app
 
-Including screenshots or videos are extremely helpful so please include them if you can. Diagrams can also be highly valuable when describing a new feature in a feature request.
+The current Swift/SwiftUI implementation is in **`Xpectacle2026/`**. The root-level
+Objective-C project and its old tests are historical Spectacle source, not the
+current build. See the [architecture overview](Xpectacle2026/README.md).
 
-## Pull Requests
+You need a Mac, full Xcode with a macOS SDK supporting the deployment target,
+and [XcodeGen](https://github.com/yonaskolb/XcodeGen). The deployment target is
+macOS 14; the source uses Swift 5.10 language mode. CI is the reference for the
+current build commands.
 
-1. Fork the repository and create your branch from `master`
-2. Add tests if your changes can and should be tested
-3. Run the test suite and confirm that all tests pass
-4. Rebase your changes on top of the most recent changes from `master`
+```sh
+# From the repository root:
+cd Xpectacle2026
+xcodegen generate
+open Xpectacle.xcodeproj
+```
 
-## Coding Style
+Choose the **Xpectacle** scheme in Xcode and configure your local signing as
+needed to run. The generated project is derived from `project.yml`; make shared
+project configuration changes there. KeyboardShortcuts is pinned to 2.4.0.
 
-To help make it easier maintain Spectacle please match the existing coding style as much as possible. This make it easier to both understand and merge your contributions. Only use two __spaces__ for indentation.
+A locally rebuilt app has a different signing identity from the published app.
+Use a separate development copy, and expect macOS to require its own Accessibility
+approval. Avoid replacing a working installation just to test a patch.
 
-## License
+## Verify a change
 
-By contributing to Spectacle you agree that your contributions will be licensed under its MIT license.
+Run the core tests from the repository root:
 
-[1]: https://guides.github.com/activities/contributing-to-open-source/#contributing
-[2]: https://github.com/eczarny/spectacle#common-issues
-[3]: https://en.wikipedia.org/wiki/Console_(OS_X)
+```sh
+cd Xpectacle2026/Packages/XpectacleCore
+swift test --build-system native
+```
+
+For the same unsigned universal build used by CI, start from the repository root:
+
+```sh
+cd Xpectacle2026
+xcodegen generate
+xcodebuild -project Xpectacle.xcodeproj -scheme Xpectacle \
+  -configuration Release -destination 'generic/platform=macOS' \
+  -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO \
+  'ARCHS=arm64 x86_64' ONLY_ACTIVE_ARCH=NO build
+```
+
+Tests cover core logic; they do not prove that real apps, permission prompts,
+multiple displays, Stage Manager, or login behavior work. For changes affecting
+those paths, record the manual scenarios you tried and what remains untested.
+Add regression tests when they meaningfully exercise changed behavior. Pure
+documentation changes do not require an app build.
+
+## Submit a pull request
+
+1. Fork the repository and create a branch from `master`.
+2. Keep the change focused and match the surrounding Swift style.
+3. Preserve existing shortcuts, settings compatibility, and permission boundaries
+   unless changing them is the stated purpose of the patch.
+4. Explain the user-visible problem, resulting behavior, verification, and any
+   limitations. Include screenshots for visual changes.
+5. Keep credentials, signing files, personal layouts, and local build artifacts
+   out of the commit.
+
+Do not modify old Spectacle source just to modernize its formatting. Preserve
+license and attribution notices. By contributing, you agree that your contribution
+is available under the project's [MIT license](LICENSE.md).
+
+## Release work
+
+Signing, notarization, packaging, and public-download verification are described
+in the [release documentation](Xpectacle2026/distribution/README.md). A successful
+build alone is not a distribution-ready release. Contributors do not need the
+maintainer's signing certificate or notarization credentials to submit changes.

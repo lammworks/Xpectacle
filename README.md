@@ -1,42 +1,98 @@
 # Xpectacle
 
-A native macOS window manager based on Spectacle. The maintained app is in
-[`Xpectacle2026/`](Xpectacle2026/), with SwiftUI settings, keyboard shortcuts,
-window snapping, named layouts, and undo/redo.
+**Your windows, one shortcut away.**
 
-## Download
+A free, open-source window manager for Mac, carrying forward the spirit of
+[Spectacle](https://github.com/eczarny/spectacle). Arrange windows from your
+keyboard, snap them to screen edges, and save arrangements for later.
 
-Get the DMG from [GitHub Releases](https://github.com/lammworks/Xpectacle/releases).
-The initial 2.0.0 Golden Gate compatibility release is a preview: it is ad-hoc
-signed and **not notarized**. Read its release notes and installation instructions.
+## Download for Mac
 
-Requires macOS 14 or newer. The DMG includes native Apple Silicon and Intel code.
-Development and compatibility checks use Xcode 27 and macOS 27 Golden Gate.
+**[Download Xpectacle 2.0.2](https://github.com/lammworks/Xpectacle/releases/download/v2.0.2/Xpectacle-2.0.2.dmg)**
+· [Release notes and checksum](https://github.com/lammworks/Xpectacle/releases/tag/v2.0.2)
+· [All releases](https://github.com/lammworks/Xpectacle/releases)
 
-## Build and verify
+- Requires **macOS 14 or newer**.
+- Includes native **Apple Silicon and Intel** builds in one app.
+- Version 2.0.2 is **Developer ID signed and Apple notarized**, with notarization
+  tickets attached to the app and DMG.
+- This is a **compatibility preview**. See the release notes for verification
+  results and remaining manual checks; notarization does not guarantee every
+  window or display setup will work.
 
-```bash
-# Requires full Xcode and XcodeGen (brew install xcodegen).
-cd Xpectacle2026
-xcodegen generate
-open Xpectacle.xcodeproj
-```
+## Get started
 
-Run tests and create a verified DMG with the [release script](Xpectacle2026/scripts/build-release.sh).
-See [build and release documentation](Xpectacle2026/distribution/README.md) for
-signing, notarization, and acceptance checks.
+1. Open the DMG and drag **Xpectacle** to **Applications**. Quit any older copy
+   before replacing it, then open the copy in Applications.
+2. Click **Open** if macOS asks you to confirm the Internet download. This is
+   normal for the first launch of a signed, notarized download.
+3. Use Xpectacle's menu-bar icon to open **Settings → Permissions**, then grant
+   access in System Settings. The pane is called **Accessibility**, or **Device
+   Control and Data Access** on macOS 27 Golden Gate.
+4. Focus a window and try **⌥⌘←** to put it on the left, or **⌥⌘→** for the right.
 
-## Permissions and operation
+Xpectacle needs Accessibility permission to control other apps' windows. It does
+not request Screen Recording or Apple Events permission. If the switch is on but
+the app still reports **Access required**, follow the
+[permission recovery steps](docs/SUPPORT.md#access-is-required-even-though-the-switch-is-on).
 
-Grant Accessibility access in System Settings > Privacy & Security > Accessibility.
-Use the menu bar icon for Settings. Xpectacle does not need Screen Recording or
-Apple Events permission. Quit other window managers if their shortcuts conflict.
+## Make room for your work
 
-Updates are manual through GitHub Releases. Windows may enforce minimum sizes;
-Xpectacle respects application constraints. Layouts apply to already-open windows.
+- **Keyboard shortcuts:** move to halves, corners, and thirds; center or maximize
+  a window; move between displays; undo and redo window moves.
+- **Edge snapping:** drag a window toward an edge and wait for the preview before
+  releasing. Adjust the delay or turn snapping off in Settings.
+- **Saved layouts:** capture an arrangement and apply it to matching, already-open
+  windows. Xpectacle does not launch apps or reopen documents for a layout.
+- **Your preferences:** customize shortcuts, exclude apps from individual window
+  actions and edge snapping, and choose whether Xpectacle launches at login.
 
-## Project history and license
+### A few useful shortcuts
 
-The original Objective-C Spectacle source remains for reference; its Xcode project
-is not the maintained app. [Legacy documentation](docs/LEGACY-SPECTACLE.md).
-Xpectacle preserves Spectacle's MIT license and attribution; see [LICENSE.md](LICENSE.md).
+| Action | Default shortcut |
+| --- | --- |
+| Left / right half | ⌥⌘← / ⌥⌘→ |
+| Top / bottom half | ⌥⌘↑ / ⌥⌘↓ |
+| Center | ⌥⌘C |
+| Maximize within the usable screen area | ⌥⌘F |
+| Next horizontal third | ⌃⌥→ |
+| Next / previous display | ⌃⌥⌘→ / ⌃⌥⌘← |
+| Undo / redo window move | ⌥⌘Z / ⇧⌥⌘Z |
+
+⌘ Command · ⌥ Option · ⌃ Control · ⇧ Shift. Imported Spectacle shortcuts and your
+own customizations take precedence; **Settings → Shortcuts** shows your bindings.
+The app's “Fullscreen” action maximizes a window without creating a macOS
+full-screen Space. Some apps enforce minimum window sizes or do not expose
+movable windows through Accessibility.
+
+## Free, local, and open source
+
+No account, subscription, or AI service is needed to use Xpectacle. Window control
+runs on your Mac. Settings and saved layouts are stored locally; **captured layouts
+can include window titles**, so review them before sharing a settings file.
+Read [Privacy](docs/PRIVACY.md) for exactly what the app reads and stores.
+
+Updates are **manual**. “Check for Updates…” opens GitHub Releases in your browser;
+it does not download or install an update. See [Support](docs/SUPPORT.md) for
+installation, permissions, and troubleshooting.
+
+## Thank you, Spectacle
+
+Spectacle, created by **Eric Czarny and its contributors**, made keyboard-driven
+window management feel natural. Xpectacle began with a longtime user's wish to
+keep that familiar workflow available on modern Macs, using Swift and SwiftUI
+with development help from Claude and ChatGPT.
+
+This is an **independent descendant**, not an official Spectacle release. It is
+not affiliated with or endorsed by Eric Czarny or the original Spectacle project.
+Their work, source history, and MIT notices remain part of this repository.
+See [Credits](docs/CREDITS.md) and the [MIT license](LICENSE.md).
+
+## Contribute
+
+Bug reports, documentation, compatibility testing, and focused pull requests are
+welcome. Start with [Contributing](CONTRIBUTING.md).
+
+The maintained Swift app lives in [`Xpectacle2026/`](Xpectacle2026/).
+The older Objective-C project and [legacy documentation](docs/LEGACY-SPECTACLE.md)
+are retained for history; they are not the current app's build instructions.
