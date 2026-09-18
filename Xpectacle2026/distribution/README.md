@@ -22,12 +22,17 @@ export XPECTACLE_NOTARY_PROFILE='lavanda-notary'
 ```
 
 The script runs package tests, generates the Xcode project, builds arm64 + x86_64,
-assembles the app and license, signs it, verifies the binary and signature,
+assembles the app and license notices, signs it, verifies the binary and signature,
 creates/verifies and signs the DMG, and writes SHA256SUMS.txt. It does not publish
 anything. Omitting the signing identity builds an ad-hoc development artifact;
 do not publish that as the signed release.
 
-The DMG contains the app, Applications shortcut, and installation instructions.
+The DMG contains the app, Applications shortcut, installation instructions, and a
+Licenses folder with the original Spectacle and KeyboardShortcuts MIT notices.
+Both notices also ship inside the app's Resources directory, with KeyboardShortcuts
+under ThirdPartyLicenses. The release script compares the bundled KeyboardShortcuts
+notice with the resolved package's license and stops if it is missing or differs;
+review the notice when updating that dependency. Notices are added before signing.
 Attach the DMG and SHA256SUMS.txt to the GitHub release for the exact source commit.
 Download the published asset again and compare its SHA-256 before declaring success.
 

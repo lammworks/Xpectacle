@@ -17,8 +17,10 @@ or the original Spectacle project.** It is not an official Spectacle update, and
 the original author has no obligation to maintain, support, or promote it.
 
 The currently published 2.0.2 app retains Spectacle's app icon. That artwork is
-inherited material, not an original Xpectacle identity. New branding is being
-developed separately; this document does not claim it has shipped.
+inherited material, not an original Xpectacle identity. The [website](https://xpectacle.wonkytonks.chatgpt.site) and launch artwork now use
+a separate Xpectacle identity: ivory keycaps, lavender accents, and paired windows.
+This generated brand artwork was approved by Diego; it is an illustration, not an
+app screenshot. The new native app icon has not yet shipped.
 
 ## The continuation
 

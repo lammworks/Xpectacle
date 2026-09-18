@@ -38,7 +38,17 @@ if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
   echo "Invalid CFBundleShortVersionString in built app: $VERSION" >&2
   exit 1
 fi
+KEYBOARD_SHORTCUTS_LICENSE="$PROJECT_DIR/distribution/ThirdPartyLicenses/KeyboardShortcuts-LICENSE.txt"
+RESOLVED_KEYBOARD_SHORTCUTS_LICENSE="$DERIVED_DIR/SourcePackages/checkouts/KeyboardShortcuts/license"
+if ! cmp -s "$KEYBOARD_SHORTCUTS_LICENSE" "$RESOLVED_KEYBOARD_SHORTCUTS_LICENSE"; then
+  echo 'KeyboardShortcuts license is missing or differs from the resolved package. Update the bundled notice before releasing.' >&2
+  exit 1
+fi
+mkdir -p "$APP_PATH/Contents/Resources/ThirdPartyLicenses" "$STAGING_DIR/Licenses"
 cp "$REPO_DIR/LICENSE.md" "$APP_PATH/Contents/Resources/LICENSE.md"
+cp "$REPO_DIR/LICENSE.md" "$STAGING_DIR/Licenses/LICENSE.md"
+cp "$KEYBOARD_SHORTCUTS_LICENSE" "$APP_PATH/Contents/Resources/ThirdPartyLicenses/KeyboardShortcuts-LICENSE.txt"
+cp "$KEYBOARD_SHORTCUTS_LICENSE" "$STAGING_DIR/Licenses/KeyboardShortcuts-LICENSE.txt"
 cp "$PROJECT_DIR/distribution/INSTALL.txt" "$STAGING_DIR/READ ME.txt"
 ln -s /Applications "$STAGING_DIR/Applications"
 # Strip filesystem metadata only from our newly built bundle before signing.

@@ -1,6 +1,8 @@
 # Xpectacle
 
-**Your windows, one shortcut away.**
+[![Xpectacle — Make room for your next thought.](docs/brand/launch-cover.jpg)](https://xpectacle.wonkytonks.chatgpt.site)
+
+**[Visit the website](https://xpectacle.wonkytonks.chatgpt.site)** · [Download for Mac](#download-for-mac) · [Get help](docs/SUPPORT.md)
 
 A free, open-source window manager for Mac, carrying forward the spirit of
 [Spectacle](https://github.com/eczarny/spectacle). Arrange windows from your
