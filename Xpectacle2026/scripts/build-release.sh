@@ -45,10 +45,12 @@ if ! cmp -s "$KEYBOARD_SHORTCUTS_LICENSE" "$RESOLVED_KEYBOARD_SHORTCUTS_LICENSE"
   exit 1
 fi
 mkdir -p "$APP_PATH/Contents/Resources/ThirdPartyLicenses" "$STAGING_DIR/Licenses"
-cp "$REPO_DIR/LICENSE.md" "$APP_PATH/Contents/Resources/LICENSE.md"
-cp "$REPO_DIR/LICENSE.md" "$STAGING_DIR/Licenses/LICENSE.md"
-cp "$KEYBOARD_SHORTCUTS_LICENSE" "$APP_PATH/Contents/Resources/ThirdPartyLicenses/KeyboardShortcuts-LICENSE.txt"
-cp "$KEYBOARD_SHORTCUTS_LICENSE" "$STAGING_DIR/Licenses/KeyboardShortcuts-LICENSE.txt"
+install -m 644 "$REPO_DIR/LICENSE.md" "$APP_PATH/Contents/Resources/LICENSE.md"
+install -m 644 "$REPO_DIR/LICENSE.md" "$STAGING_DIR/Licenses/LICENSE.md"
+# Package-cache notices can be read-only. Staged copies need owner write access
+# so metadata can be stripped before signing, without changing source notices.
+install -m 644 "$KEYBOARD_SHORTCUTS_LICENSE" "$APP_PATH/Contents/Resources/ThirdPartyLicenses/KeyboardShortcuts-LICENSE.txt"
+install -m 644 "$KEYBOARD_SHORTCUTS_LICENSE" "$STAGING_DIR/Licenses/KeyboardShortcuts-LICENSE.txt"
 cp "$PROJECT_DIR/distribution/INSTALL.txt" "$STAGING_DIR/READ ME.txt"
 ln -s /Applications "$STAGING_DIR/Applications"
 # Strip filesystem metadata only from our newly built bundle before signing.

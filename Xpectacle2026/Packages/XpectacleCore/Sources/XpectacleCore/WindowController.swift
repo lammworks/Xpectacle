@@ -13,6 +13,7 @@ public actor WindowController {
     private let detector: ScreenDetector
     private let stageManager: StageManagerProbe
     private var thirdsByWindow: [String: ThirdsCycler.State] = [:]
+    private var sideWidthsByWindow: [String: SideWidthCycle] = [:]
     private var history = UndoStack()
     private var disabledBundleIDs: Set<String> = []
     private var windowKeys: [AXWindowIdentity: (key: String, lastAccess: Int)] = [:]
@@ -58,11 +59,13 @@ public actor WindowController {
             try history.undo(for: key) { frame in
                 try mover.move(window: window, to: frame, primaryHeight: primaryHeight)
             }
+            sideWidthsByWindow.removeValue(forKey: key)
             return
         case .redoLastMove, .redoLastMoveAcrossDisplays:
             try history.redo(for: key) { frame in
                 try mover.move(window: window, to: frame, primaryHeight: primaryHeight)
             }
+            sideWidthsByWindow.removeValue(forKey: key)
             return
         default:
             break
@@ -78,26 +81,54 @@ public actor WindowController {
         guard let target else { return }
         let visible = stageManager.adjustedVisibleFrame(target.visibleFrame)
         var thirds = thirdsByWindow[key, default: .init()]
+        // Captured-window calls come from drag snapping: their fixed half must
+        // match the preview, even when the same edge was used just before.
+        let cyclesSideWidth = capturedWindow == nil && (action == .leftHalf || action == .rightHalf)
+        let sideWidth = cyclesSideWidth ? SideWidthCycle.nextWidth(
+            after: sideWidthsByWindow[key], action: action, screenID: target.id,
+            visibleFrame: visible, currentFrame: currentFrame
+        ) : .half
         let newFrame: CGRect
         if action.changesDisplay {
             newFrame = scaled(currentFrame, fromVisible: detector.screen(containing: currentFrame, in: screens)?.visibleFrame ?? visible, toVisible: visible)
         } else if let calc = PositionCalculator.calculate(
-            action: action, windowFrame: currentFrame, visibleFrame: visible, thirdsState: thirds
+            action: action, windowFrame: currentFrame, visibleFrame: visible,
+            thirdsState: thirds, sideWidth: sideWidth
         ) {
             newFrame = calc
         } else {
             return
         }
         guard newFrame.isUsableWindowFrame else { throw AXFailure.invalidFrame }
+        var actualFrame = currentFrame
         if newFrame != currentFrame {
             try mover.move(window: window, to: newFrame, primaryHeight: primaryHeight)
             // Applications can impose minimum sizes or round to a text-cell grid.
             // Redo must restore the actual result, and a failed move must not
             // destroy the existing redo tail.
-            let actualFrame = try window.frameInAppKit(primaryHeight: primaryHeight)
+            actualFrame = try window.frameInAppKit(primaryHeight: primaryHeight)
+            let anchored = PositionCalculator.reanchoredSideFrame(
+                actual: actualFrame, target: newFrame, visibleFrame: visible, action: action
+            )
+            if anchored != actualFrame {
+                try mover.move(window: window, to: anchored, primaryHeight: primaryHeight)
+                actualFrame = try window.frameInAppKit(primaryHeight: primaryHeight)
+            }
             history.record(for: key, before: currentFrame, after: actualFrame)
-            guard actualFrame != currentFrame else { return }
         }
+
+        if cyclesSideWidth {
+            // A minimum-size constraint can make a requested third a no-op.
+            // Still advance after a successful call so the next press can
+            // continue through the cycle. Failed calls never advance it.
+            sideWidthsByWindow[key] = SideWidthCycle(
+                action: action, width: sideWidth, screenID: target.id,
+                visibleFrame: visible, actualFrame: actualFrame
+            )
+        } else {
+            sideWidthsByWindow.removeValue(forKey: key)
+        }
+        if newFrame != currentFrame && actualFrame == currentFrame { return }
 
         switch action {
         case .nextThirdHorizontal: thirds.horizontal = thirds.nextHorizontal
@@ -134,6 +165,7 @@ public actor WindowController {
             windowKeys.removeValue(forKey: oldest.key)
             history.remove(for: oldest.value.key)
             thirdsByWindow.removeValue(forKey: oldest.value.key)
+            sideWidthsByWindow.removeValue(forKey: oldest.value.key)
         }
         let key = UUID().uuidString
         windowKeys[identity] = (key, accessCounter)

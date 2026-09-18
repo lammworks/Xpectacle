@@ -3,7 +3,7 @@
 ## Install or update
 
 1. Download the DMG from [GitHub Releases](https://github.com/lammworks/Xpectacle/releases).
-   The current 2.0.2 compatibility preview is Developer ID signed and Apple
+   The current 2.0.3 compatibility preview is Developer ID signed and Apple
    notarized, for macOS 14 or later on Apple Silicon and Intel.
 2. Quit any running copy of Xpectacle.
 3. Open the DMG and copy Xpectacle to Applications, replacing the older app if
@@ -21,7 +21,7 @@ a version feed, download a package, or install it for you.
 can still show that confirmation. Signing identifies the publisher; notarization
 checks a submitted build and does not guarantee all its features work.
 
-The signing identity for the published 2.0.2 app is **Developer ID Application:
+The signing identity for the published 2.0.3 app is **Developer ID Application:
 Ondemand Technologies Inc (K567UPF58F)**. This is the developer account used to sign
 Xpectacle, not the original Spectacle creator's identity.
 
@@ -79,7 +79,7 @@ Layouts act on **already-open windows**. They match the saved app and, when
 available, the window title. A document or browser page whose title changed may
 no longer match. Capturing a layout does not arrange for documents to be reopened.
 The Disabled Apps list applies to individual actions and edge snapping; it is not
-a filter for captured or applied layouts in 2.0.2.
+a filter for captured or applied layouts in 2.0.3.
 
 ## Launch at login
 

@@ -10,13 +10,13 @@ keyboard, snap them to screen edges, and save arrangements for later.
 
 ## Download for Mac
 
-**[Download Xpectacle 2.0.2](https://github.com/lammworks/Xpectacle/releases/download/v2.0.2/Xpectacle-2.0.2.dmg)**
-· [Release notes and checksum](https://github.com/lammworks/Xpectacle/releases/tag/v2.0.2)
+**[Download Xpectacle 2.0.3](https://github.com/lammworks/Xpectacle/releases/download/v2.0.3/Xpectacle-2.0.3.dmg)**
+· [Release notes and checksum](https://github.com/lammworks/Xpectacle/releases/tag/v2.0.3)
 · [All releases](https://github.com/lammworks/Xpectacle/releases)
 
 - Requires **macOS 14 or newer**.
 - Includes native **Apple Silicon and Intel** builds in one app.
-- Version 2.0.2 is **Developer ID signed and Apple notarized**, with notarization
+- Version 2.0.3 is **Developer ID signed and Apple notarized**, with notarization
   tickets attached to the app and DMG.
 - This is a **compatibility preview**. See the release notes for verification
   results and remaining manual checks; notarization does not guarantee every
@@ -53,7 +53,7 @@ the app still reports **Access required**, follow the
 
 | Action | Default shortcut |
 | --- | --- |
-| Left / right half | ⌥⌘← / ⌥⌘→ |
+| Cycle left / right: ½ → ⅔ → ⅓ | ⌥⌘← / ⌥⌘→ |
 | Top / bottom half | ⌥⌘↑ / ⌥⌘↓ |
 | Center | ⌥⌘C |
 | Maximize within the usable screen area | ⌥⌘F |
@@ -66,6 +66,11 @@ own customizations take precedence; **Settings → Shortcuts** shows your bindin
 The app's “Fullscreen” action maximizes a window without creating a macOS
 full-screen Space. Some apps enforce minimum window sizes or do not expose
 movable windows through Accessibility.
+
+Repeat **⌥⌘←** or **⌥⌘→** to cycle a window through half, two thirds, and one
+third of the screen. Each window keeps its own cycle. Put your main window in
+two thirds and another in the remaining third, or use **⌥⌘C** to center a window
+without changing its size. Drag-to-edge snapping still uses half width.
 
 ## Free, local, and open source
 
