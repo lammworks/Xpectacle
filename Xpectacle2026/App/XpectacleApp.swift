@@ -10,7 +10,7 @@ struct XpectacleApp: App {
     var body: some Scene {
         MenuBarExtra(
             appModel.accessibilityTrusted ? "Xpectacle" : "Xpectacle — Access Required",
-            systemImage: appModel.accessibilityTrusted ? "rectangle.split.2x2" : "exclamationmark.triangle"
+            image: "MenuBarTemplate"
         ) {
             if !appModel.accessibilityTrusted {
                 Text("Window control is blocked by macOS.")

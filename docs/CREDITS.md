@@ -16,8 +16,8 @@ along with the original copyright and [MIT license](../LICENSE.md).
 or the original Spectacle project.** It is not an official Spectacle update, and
 the original author has no obligation to maintain, support, or promote it.
 
-The currently published 2.0.2 app retains Spectacle's app icon. That artwork is
-inherited material, not an original Xpectacle identity. The [website](https://xpectacle.wonkytonks.chatgpt.site) and launch artwork now use
+The currently published 2.0.3 app retains Spectacle's app icon. That artwork is
+inherited material, not an original Xpectacle identity. The menu-bar icon, [website](https://xpectacle.wonkytonks.chatgpt.site), and launch artwork use
 a separate Xpectacle identity: lavender glasses with an X-shaped bridge, ivory
 keycaps, and paired windows.
 This generated brand artwork was approved by Diego; it is an illustration, not an

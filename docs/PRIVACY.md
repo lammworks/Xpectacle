@@ -1,6 +1,6 @@
 # Privacy
 
-This describes the maintained Xpectacle 2.0.2 app in `Xpectacle2026/`, based on its
+This describes the maintained Xpectacle 2.0.3 app in `Xpectacle2026/`, based on its
 source code. Historical Spectacle code in this repository is not shipped as the
 current app.
 

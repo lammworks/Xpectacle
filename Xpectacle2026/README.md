@@ -32,6 +32,24 @@ Geometry uses AppKit coordinates; AX coordinates are converted at the boundary.
 Visible screen bounds come from AppKit. No direct TCC database access or private
 window-server API is used.
 
+## Window shortcuts
+
+- Press **Command + Option + Left** repeatedly to cycle the focused window
+  through the left **1/2 → 2/3 → 1/3 → 1/2** of the usable display, matching
+  Spectacle's familiar order.
+- **Command + Option + Right** cycles the same widths, anchored to the right.
+  Pair two-thirds on one side with one-third on the other for an ultrawide layout.
+- **Command + Option + C** centers the window while keeping its size.
+- The separate horizontal thirds action moves a one-third-width window among
+  the left, middle, and right slots. Drag snapping to a side stays at one half.
+
+Each window keeps its own side-width cycle. Moving or resizing it manually,
+changing its display or available display bounds, or using another action on
+that window restarts the cycle at one half. Application minimum sizes still
+apply; when an app accepts a move but constrains its size, the next shortcut
+still advances to the following size. An Accessibility error leaves the cycle
+unchanged.
+
 ## Verification
 
 ```bash
@@ -45,7 +63,7 @@ and remaining manual checks belong in the release notes.
 
 ## Distribution limits
 
-Version 2.0.2 uses Developer ID signing and Apple notarization. Upgrading from the
+Version 2.0.3 uses Developer ID signing and Apple notarization. Upgrading from the
 earlier ad-hoc preview may require refreshing Xpectacle's existing Accessibility
 permission once. The Permissions tab explains this recovery. Each release records its
 verification results and any remaining runtime limitations.

@@ -17,15 +17,16 @@ public enum PositionCalculator {
         action: WindowAction,
         windowFrame: CGRect,
         visibleFrame: CGRect,
-        thirdsState: ThirdsCycler.State = .init()
+        thirdsState: ThirdsCycler.State = .init(),
+        sideWidth: SideWidth = .half
     ) -> CGRect? {
         guard windowFrame.isUsableWindowFrame, visibleFrame.isUsableWindowFrame else { return nil }
         switch action {
         case .leftHalf:
             return CGRect(x: visibleFrame.minX, y: visibleFrame.minY,
-                          width: floor(visibleFrame.width / 2), height: visibleFrame.height)
+                          width: sideWidth.points(in: visibleFrame.width), height: visibleFrame.height)
         case .rightHalf:
-            let w = floor(visibleFrame.width / 2)
+            let w = sideWidth.points(in: visibleFrame.width)
             return CGRect(x: visibleFrame.minX + visibleFrame.width - w, y: visibleFrame.minY,
                           width: w, height: visibleFrame.height)
         case .topHalf:
@@ -63,7 +64,7 @@ public enum PositionCalculator {
                 y: visibleFrame.minY + (visibleFrame.height - windowFrame.height) / 2,
                 width: windowFrame.width,
                 height: windowFrame.height
-            ).integral
+            )
         case .nextThirdHorizontal:
             return horizontalThird(visibleFrame: visibleFrame, slot: thirdsState.nextHorizontal)
         case .nextThirdVertical:
@@ -93,6 +94,25 @@ public enum PositionCalculator {
 
     /// Pixel step used by extend/shrink edge actions, matches Spectacle's 30 px.
     public static let sizingStep: CGFloat = 30
+
+    /// An app's minimum width can exceed a requested third. The generic mover
+    /// keeps oversized windows at the target's left edge; right-side actions
+    /// must instead keep their right edge on screen. If the window is wider
+    /// than the entire usable display, keep its left edge/title-bar controls
+    /// reachable rather than moving them off the left edge.
+    static func reanchoredSideFrame(
+        actual: CGRect, target: CGRect, visibleFrame: CGRect, action: WindowAction
+    ) -> CGRect {
+        guard action == .leftHalf || action == .rightHalf,
+              actual.isUsableWindowFrame, visibleFrame.isUsableWindowFrame,
+              actual.width > target.width
+        else { return actual }
+        var anchored = actual
+        anchored.origin.x = action == .rightHalf
+            ? max(visibleFrame.minX, visibleFrame.maxX - actual.width)
+            : visibleFrame.minX
+        return anchored
+    }
 
     // MARK: - Thirds
 
